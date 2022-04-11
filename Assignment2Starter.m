@@ -22,7 +22,7 @@ classdef Assignment2Starter < handle
 
             self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'Instantiated']};
 
-            SetUpEnvironment;
+            SetUpEnvironment(self);
         end
 
         function SetUpEnvironment(self)
@@ -55,8 +55,8 @@ classdef Assignment2Starter < handle
             %self.sugar = MoveableObject('Sugar.ply'); % TODO
             %self.sugar.Move(transl(1.3,1,1));
 
-            % Initialise robot here....
-            %self.robot = % Create instance of robot class % TODO
+            % Initialise robot
+            self.robot = LinearDobot(false);
           
             axis equal
             camlight
