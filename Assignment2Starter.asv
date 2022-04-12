@@ -35,13 +35,12 @@ classdef Assignment2Starter < handle
             %surf([-3,-3;-3,-3],[-1.8,1.8;-1.8,1.8],[0,0;2.7,2.7],'CData',flip(imread('lab1.jpg')),'FaceColor','texturemap'); %Back Wall
             %surf([-3,1.8;-3,1.8],[-1.8,-1.8;-1.8,-1.8],[0,0;2.7,2.7],'CData',flip(imread('lab2.jpg')),'FaceColor','texturemap'); %Side Wall
             
-
-            %Kitchen
             PlaceObject('KitchenBench.ply', [-2.5,0,0]); % Dimensions L(y):7 W(x):1 H(z):1
-            PlaceObject('UpperCabinet1.ply', [-2.75,2.7,1.75]); % Dimensions L(y):1 W(x):0.75 H(z):0.75
-            PlaceObject('UpperCabinet2.ply', [-2.75,1.7,1.75]); % Dimensions L(y):1 W(x):0.75 H(z):0.75
-            PlaceObject('Fridge.ply', [-2.5,3.22,0]); % Dimensions L(y):1.25 W(x):1 H(z):2.25
             
+            PlaceObject('UpperCabinet1.ply', [-2.75,2.7,1.75]); % Dimensions L(y):1 W(x):0.75 H(z):0.75
+            PlaceObject('UpperCabinet1.ply', [-2.75,2.7,1.75]); % Dimensions L(y):1 W(x):0.75 H(z):0.75
+
+            PlaceObject('Fridge.ply', [-2.5,3.22,0]); % Dimensions L(y):1.25 W(x):1 H(z):2.25
             % Safety Features
             %PlaceObject('ESBtable.ply', [-1.1,-1.2,1]);
             %PlaceObject('FE.ply', [-2.8,1.5,0.39]);
