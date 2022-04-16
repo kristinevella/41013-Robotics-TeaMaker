@@ -11,9 +11,11 @@ classdef Assignment2Starter < handle
 
         % Interactive objects
         kettle;
-        mug;
+        cup;
         teaBag;
         sugar;
+        spoon;
+        milk;
 
     end
     methods
@@ -48,17 +50,23 @@ classdef Assignment2Starter < handle
 
             %PlaceObject('SeatedGirl.ply', [-2.5,-1.2,0])
 
-            %self.kettle = MoveableObject('Kettle.ply'); % TODO
-            %self.kettle.Move(transl(1,1,1));
+            self.kettle = MoveableObject('kettle.ply');
+            self.kettle.Move(transl(-3,2,1));
 
-            %self.mug = MoveableObject('Mug.ply'); % TODO
-            %self.mug.Move(transl(1.1,1,1));
+            self.cup = MoveableObject('cup.ply');
+            self.cup.Move(transl(-3,2,2)); %Starts inside Upper Cabinet 2 (left cabinet)
+          
+            self.spoon = MoveableObject('spoon.ply');
+            self.spoon.Move(transl(-3,2.8,1.05)); %Starts on the bench for now
 
-            %self.teaBag = MoveableObject('TeaBag.ply'); % TODO
-            %self.teaBag.Move(transl(1.2,1,1));
+            self.teaBag = MoveableObject('teabag.ply');
+            self.teaBag.Move(transl(-3,2.6,1.15)); %Starts on the bench for now
 
-            %self.sugar = MoveableObject('Sugar.ply'); % TODO
-            %self.sugar.Move(transl(1.3,1,1));
+            self.sugar = MoveableObject('sugarcontainer.ply'); %Added a sugar container, should this become an unmovable object and then add movable sugar cubes?
+            self.sugar.Move(transl(-3.2,2.2,1));
+
+            self.milk = MoveableObject('milk.ply'); %Starts inside the fridge
+            self.milk.Move(transl(-3,4,1.15));
 
             % Initialise robot
             self.robot = LinearDobot(false);
@@ -73,16 +81,16 @@ classdef Assignment2Starter < handle
     
             % 1. Boil kettle
 
-            % 2. Place mug (open cabinet, get mug, close cabinet)
+            % 2. Place cup (open cabinet, get cup, close cabinet)
 
-            % EXAMPLE - Won't work until a mug is added 
+            % EXAMPLE - Won't work until a cup is added 
             %q = zeros(1,6);
-            %GetObject(self.robot, self.mug.currentLocation, q, 100, self.L); % Get the mug
-            %MoveObject(self.robot, self.mug, q, 100, self.L) % Pick up mug and move to desired location (TODO: Implement moving the orientation)
+            %GetObject(self.robot, self.cup.currentLocation, q, 100, self.L); % Get the cup
+            %MoveObject(self.robot, self.cup, q, 100, self.L) % Pick up cup and move to desired location (TODO: Implement moving the orientation)
 
             % 3. Place teabag (open container, get bag, close container)
 
-            % 4. Place sugar in mug (...)
+            % 4. Place sugar in cup (...)
 
             % 5. Pour water
 
