@@ -10,7 +10,7 @@ classdef Assignment2Starter < handle
         robot;
 
         % Interactive objects
-        kettle;
+        hotWaterDispenser;
         cup;
         teaBag;
         sugar;
@@ -50,8 +50,8 @@ classdef Assignment2Starter < handle
 
             %PlaceObject('SeatedGirl.ply', [-2.5,-1.2,0])
 
-            self.kettle = MoveableObject('kettle.ply');
-            self.kettle.Move(transl(-3,2,1));
+            self.hotWaterDispenser = MoveableObject('hotwaterdispenser.ply'); %set origin at the tap
+            self.hotWaterDispenser.Move(transl(-3,-2.5,1.2));
 
             self.cup = MoveableObject('cup.ply');
             self.cup.Move(transl(-3,2,2)); %Starts inside Upper Cabinet 2 (left cabinet)
