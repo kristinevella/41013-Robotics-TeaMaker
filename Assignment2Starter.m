@@ -16,7 +16,8 @@ classdef Assignment2Starter < handle
         teaContainer_LemonAndGinger;
         cup;
         teaBag;
-        sugar;
+        sugarcontainer;
+        sugarcube;
         spoon;
         milk;
 
@@ -74,8 +75,11 @@ classdef Assignment2Starter < handle
             self.teaBag = MoveableObject('teabag.ply');
             self.teaBag.Move(transl(-3,2.6,1.15)); %Starts on the bench for now
 
-            self.sugar = MoveableObject('sugarcontainer.ply'); %Added a sugar container, should this become an unmovable object and then add movable sugar cubes?
-            self.sugar.Move(transl(-3.2,2.2,1));
+            self.sugarcontainer = MoveableObject('sugarcontainer.ply'); %Added a sugar container, should this become an unmovable object and then add movable sugar cubes?
+            self.sugarcontainer.Move(transl(-3.2,2.2,1));
+
+            self.sugarcube = MoveableObject('sugarcube.ply'); %Added a sugar container, should this become an unmovable object and then add movable sugar cubes?
+            self.sugarcube.Move(transl(-3.2,2.2,1.2));
 
             self.milk = MoveableObject('milk.ply'); %Starts inside the fridge
             self.milk.Move(transl(-3,4,1.15));
