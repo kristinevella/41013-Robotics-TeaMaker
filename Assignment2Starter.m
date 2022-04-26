@@ -11,6 +11,9 @@ classdef Assignment2Starter < handle
 
         % Interactive objects
         hotWaterDispenser;
+        teaContainer_EnglishBreakfast;
+        teaContainer_Green;
+        teaContainer_LemonAndGinger;
         cup;
         teaBag;
         sugar;
@@ -52,6 +55,15 @@ classdef Assignment2Starter < handle
 
             self.hotWaterDispenser = MoveableObject('hotwaterdispenser.ply'); %set origin at the tap
             self.hotWaterDispenser.Move(transl(-3,-2.5,1.2));
+
+            self.teaContainer_EnglishBreakfast = MoveableObject('teaContainer_EnglishBreakfast.ply'); %set origin at the tap
+            self.teaContainer_EnglishBreakfast.Move(transl(-3,1,1.2));
+
+            self.teaContainer_Green = MoveableObject('teaContainer_Green.ply'); %set origin at the tap
+            self.teaContainer_Green.Move(transl(-3,1.4,1.2));
+
+            self.teaContainer_LemonAndGinger = MoveableObject('teaContainer_LemonAndGinger.ply'); %set origin at the tap
+            self.teaContainer_LemonAndGinger.Move(transl(-3,1.8,1.2));
 
             self.cup = MoveableObject('cup.ply');
             self.cup.Move(transl(-3,2,2)); %Starts inside Upper Cabinet 2 (left cabinet)
