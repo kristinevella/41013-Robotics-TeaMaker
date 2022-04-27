@@ -1,6 +1,12 @@
 classdef Assignment2Starter < handle
     properties (Constant)
         BENCH_HEIGHT = 1; % Height of kitchen bench
+        WATER_LOCATION = [-3,-2.5,1.2];
+        SKIM_MILK_LOCATION = [-3,-2.5,1.2];
+        REGULAR_MILK_LOCATION = [-3,-2.5,1.2];
+        ENGLISH_BREAKFAST_LOCATION = [-3,1,1.2];
+        GREEN_TEA_LOCATION = [-3,1.4,1.2];
+        LEMON_GINGER_TEA_LOCATION = [-3,1.8,1.2];
     end
     properties
         %Logger
@@ -10,16 +16,16 @@ classdef Assignment2Starter < handle
         robot;
 
         % Interactive objects
-        hotWaterDispenser;
-        teaContainer_EnglishBreakfast;
-        teaContainer_Green;
-        teaContainer_LemonAndGinger;
         cup;
         teaBag;
-        sugarcontainer;
+        %sugarcontainer;
         sugarcube;
         spoon;
-        milk;
+        %milk;
+        coaster1;
+        coaster2;
+        coaster3;
+        coaster4;
 
     end
     methods
@@ -40,7 +46,6 @@ classdef Assignment2Starter < handle
             %surf([-3,-3;1.8,1.8],[-1.8,1.8;-1.8,1.8],[0.01,0.01;0.01,0.01],'CData',imread('concrete.jpg'),'FaceColor','texturemap'); %Floor
             %surf([-3,-3;-3,-3],[-1.8,1.8;-1.8,1.8],[0,0;2.7,2.7],'CData',flip(imread('lab1.jpg')),'FaceColor','texturemap'); %Back Wall
             %surf([-3,1.8;-3,1.8],[-1.8,-1.8;-1.8,-1.8],[0,0;2.7,2.7],'CData',flip(imread('lab2.jpg')),'FaceColor','texturemap'); %Side Wall
-            
 
             %Kitchen
             PlaceObject('KitchenBench.ply', [-2.5,0,0]); % Dimensions L(y):7 W(x):1 H(z):1
@@ -54,17 +59,18 @@ classdef Assignment2Starter < handle
 
             %PlaceObject('SeatedGirl.ply', [-2.5,-1.2,0])
 
-            self.hotWaterDispenser = MoveableObject('hotwaterdispenser.ply'); %set origin at the tap
-            self.hotWaterDispenser.Move(transl(-3,-2.5,1.2));
+            PlaceObject('hotwaterdispenser.ply', [-3,-2.5,1.2]) % Set origin at the tap
 
-            self.teaContainer_EnglishBreakfast = MoveableObject('teaContainer_EnglishBreakfast.ply'); %set origin at the tap
-            self.teaContainer_EnglishBreakfast.Move(transl(-3,1,1.2));
+            PlaceObject('hotwaterdispenser.ply', [-3,-2,1.2]) % Set origin at the tap             %change to milk dispenser 1
+            PlaceObject('hotwaterdispenser.ply', [-3,-1.5,1.2]) % Set origin at the tap             %change to milk dispenser 2
 
-            self.teaContainer_Green = MoveableObject('teaContainer_Green.ply'); %set origin at the tap
-            self.teaContainer_Green.Move(transl(-3,1.4,1.2));
+            PlaceObject('teaContainer_EnglishBreakfast.ply',self.ENGLISH_BREAKFAST_LOCATION);
+            PlaceObject('teaContainer_Green.ply',self.GREEN_TEA_LOCATION);
+            PlaceObject('teaContainer_LemonAndGinger.ply',self.LEMON_GINGER_TEA_LOCATION);
 
-            self.teaContainer_LemonAndGinger = MoveableObject('teaContainer_LemonAndGinger.ply'); %set origin at the tap
-            self.teaContainer_LemonAndGinger.Move(transl(-3,1.8,1.2));
+            PlaceObject('sugarcontainer.ply',[-3.2,2.2,1]);
+            %self.sugarcontainer = MoveableObject('sugarcontainer.ply'); %Added a sugar container, should this become an unmovable object and then add movable sugar cubes? - Yeah, I think so 
+            %self.sugarcontainer.Move(transl(-3.2,2.2,1));
 
             self.cup = MoveableObject('cup.ply');
             self.cup.Move(transl(-3,2,2)); %Starts inside Upper Cabinet 2 (left cabinet)
@@ -72,17 +78,14 @@ classdef Assignment2Starter < handle
             self.spoon = MoveableObject('spoon.ply');
             self.spoon.Move(transl(-3,2.8,1.05)); %Starts on the bench for now
 
-            self.teaBag = MoveableObject('teabag.ply');
-            self.teaBag.Move(transl(-3,2.6,1.15)); %Starts on the bench for now
-
-            self.sugarcontainer = MoveableObject('sugarcontainer.ply'); %Added a sugar container, should this become an unmovable object and then add movable sugar cubes?
-            self.sugarcontainer.Move(transl(-3.2,2.2,1));
+            %self.teaBag = MoveableObject('teabag.ply');
+            %self.teaBag.Move(transl(-3,2.6,1.15)); %Starts on the bench for now
 
             self.sugarcube = MoveableObject('sugarcube.ply'); %Added a sugar container, should this become an unmovable object and then add movable sugar cubes?
             self.sugarcube.Move(transl(-3.2,2.2,1.2));
 
-            self.milk = MoveableObject('milk.ply'); %Starts inside the fridge
-            self.milk.Move(transl(-3,4,1.15));
+            %self.milk = MoveableObject('milk.ply'); %Starts inside the fridge
+            %self.milk.Move(transl(-3,4,1.15));
 
             % Initialise robot
             self.robot = LinearDobot(false);
@@ -92,26 +95,86 @@ classdef Assignment2Starter < handle
         end
         
         % Make tea using the robot
-        function MakeTea(self)
+        function MakeTea(self, teaType, milkType, sugarQuantity)
             self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'Called']};
-    
-            % 1. Boil kettle
+         
+            %% 1. Pickup cup and place under the water dispenser
+            q = self.robot.model.getpos(); % ** Change q to suit 
+            GetObject(self.robot.model, self.cup.currentLocation, q, 50, self.L); % Get the cup
+            
+            self.cup.goalLocation = self.WATER_LOCATION;
+            q = self.robot.model.getpos(); % ** Change q to suit
+            MoveObject(self.robot.model, self.cup, q, 50, self.L); % Pick up cup and move to under water dispenser
 
-            % 2. Place cup (open cabinet, get cup, close cabinet)
+            % TODO dispense water? Press button, water flows down to cup?
 
-            % EXAMPLE - Won't work until a cup is added 
-            %q = zeros(1,6);
-            %GetObject(self.robot, self.cup.currentLocation, q, 100, self.L); % Get the cup
-            %MoveObject(self.robot, self.cup, q, 100, self.L) % Pick up cup and move to desired location (TODO: Implement moving the orientation)
+            %% 2. Get appropriate teabag (selected from UI) and place in cup
+            switch teaType
+                case 1
+                    selectedTeaLocation = self.ENGLISH_BREAKFAST_LOCATION;
+                case 2
+                    selectedTeaLocation = self.GREEN_TEA_LOCATION;
+                case 3
+                    selectedTeaLocation = self.LEMON_GINGER_TEA_LOCATION;
+                otherwise
+                    self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'Invalid tea request - Order cancelled']};
+                    % Cancel order ?? TODO
+            end
+            
+            q = self.robot.model.getpos(); % ** Change q to suit 
+            GetObject(self.robot.model, selectedTeaLocation, q, 50, self.L); % Go to the teabag location
+            
+            self.teaBag = MoveableObject('teabag.ply',selectedTeaLocation);
+            self.teaBag.goalLocation = self.cup.currentLocation;
+            q = self.robot.model.getpos(); % ** Change q to suit
+            MoveObject(self.robot.model, self.teabag, q, 100, self.L); % Pick up teabag and place in cup
 
-            % 3. Place teabag (open container, get bag, close container)
+            %% 3. Get sugar (quantity per UI) and place in cup
+            if sugarQuantity > 0                                        % Done only if sugar was requested 
+                for i=1:sugarQuantity
+                    q = self.robot.model.getpos(); % ** Change q to suit 
+                    GetObject(self.robot.model, self.sugarcube.currentLocation, q, 50, self.L); % Go to the sugar canister
+                    
+                    self.sugarcube.goalLocation = self.cup.currentLocation;
+                    q = self.robot.model.getpos(); % ** Change q to suit
+                    MoveObject(self.robot.model, self.sugarcube, q, 100, self.L); % Pick up sugercube and place in cup
+                end
+            end 
 
-            % 4. Place sugar in cup (...)
+            %% 4. Pickup cup and place under the appropriate milk dispenser
+            % (selected from UI)
+            switch milkType
+                case 0                                                  % None
+                    % Do nothing 
+                case 1                                                  % Regular
+                    selectedMilkLocation = self.REGULAR_MILK_LOCATION;
+                case 2                                                  % Skim
+                    selectedMilkLocation = self.SKIM_MILK_LOCATION;
+                otherwise
+                    self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'Invalid milk request - Order cancelled']};
+                    % Cancel order ?? TODO
+            end
 
-            % 5. Pour water
+            if milkType > 0
+                q = self.robot.model.getpos(); % ** Change q to suit 
+                GetObject(self.robot.model, self.cup.currentLocation, q, 50, self.L); % Get the cup
+                
+                self.cup.goalLocation = selectedMilkLocation;
+                q = self.robot.model.getpos(); % ** Change q to suit
+                MoveObject(self.robot.model, self.cup, q, 100, self.L); % Pick up cup and move to under milk dispenser
+            end 
 
-            % 6. Replace kettle
+            % TODO dispense milk? Press button, milk flows down to cup?
+            % (button location?)
 
+            %% 5. Pickup cup and place on appropriate available coaster
+            q = self.robot.model.getpos(); % ** Change q to suit 
+            GetObject(self.robot.model, self.cup.currentLocation, q, 50, self.L); % Get the cup
+            
+%             TODO Uncomment once coaster exists
+%             self.cup.goalLocation = self.coaster1.currentLocation; % will need to change for multiple cups of tea TODO
+%             q = self.robot.model.getpos(); % ** Change q to suit
+%             MoveObject(self.robot.model, self.cup, q, 50, self.L); % Pick up cup and move to coaster
             
             disp('Task 1 - Build model and environment: Complete');
             self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'Complete']};
@@ -141,8 +204,8 @@ end
 function MoveObject(model, object, q, steps, L)
     L.mlog = {L.DEBUG,mfilename('class'),['MoveObject: ','Called']};
 
-    q = model.ikine(brick.goalLocation,q)
-    L.mlog = {L.DEBUG,mfilename('class'),['MoveObject: Set of joints to move object to ',L.MatrixToString(brick.goalLocation),' = ',L.MatrixToString(q)]};
+    q = model.ikine(object.goalLocation,q)
+    L.mlog = {L.DEBUG,mfilename('class'),['MoveObject: Set of joints to move object to ',L.MatrixToString(object.goalLocation),' = ',L.MatrixToString(q)]};
 
     tr = model.fkine(q)
     L.mlog = {L.DEBUG,mfilename('class'),['MoveObject: Checking result using fkine: ', L.MatrixToString(tr)]};
