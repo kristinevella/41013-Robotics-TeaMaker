@@ -1,12 +1,11 @@
 classdef Assignment2Starter < handle
     properties (Constant)
-        BENCH_HEIGHT = 1; % Height of kitchen bench
-        WATER_LOCATION = [-3,-2.5,1.2];
-        SKIM_MILK_LOCATION = [-3,-2.5,1.2];
-        REGULAR_MILK_LOCATION = [-3,-2.5,1.2];
-        ENGLISH_BREAKFAST_LOCATION = [-3,1,1.2];
-        GREEN_TEA_LOCATION = [-3,1.4,1.2];
-        LEMON_GINGER_TEA_LOCATION = [-3,1.8,1.2];
+        WATER_LOCATION = [-1,-2,1.2];
+        SKIM_MILK_LOCATION = [-1,-2.5,1.2];
+        REGULAR_MILK_LOCATION = [-1,-2.9,1.2];
+        ENGLISH_BREAKFAST_LOCATION = [-0.8,-1.4,1.2];
+        GREEN_TEA_LOCATION = [-0.5,-1.4,1.2];
+        LEMON_GINGER_TEA_LOCATION = [-0.2,-1.4,1.2];
     end
     properties
         %Logger
@@ -18,10 +17,8 @@ classdef Assignment2Starter < handle
         % Interactive objects
         cup;
         teaBag;
-        %sugarcontainer;
         sugarcube;
         spoon;
-        %milk;
         coaster1;
         coaster2;
         coaster3;
@@ -43,49 +40,45 @@ classdef Assignment2Starter < handle
             
             hold on
             % Surrounding Surfaces
-            %surf([-3,-3;1.8,1.8],[-1.8,1.8;-1.8,1.8],[0.01,0.01;0.01,0.01],'CData',imread('concrete.jpg'),'FaceColor','texturemap'); %Floor
-            %surf([-3,-3;-3,-3],[-1.8,1.8;-1.8,1.8],[0,0;2.7,2.7],'CData',flip(imread('lab1.jpg')),'FaceColor','texturemap'); %Back Wall
+            surf([-2,-2;4,4],[-4,4.5;-4,4.5],[0.01,0.01;0.01,0.01],'CData',imread('tiles.jpg'),'FaceColor','texturemap'); %Floor
+            %surf([-4,-4;-4,-4],[-4,4;-4,4],[0,0;2.7,2.7],'CData',flip(imread('tiles.jpg')),'FaceColor','texturemap'); %Back Wall
             %surf([-3,1.8;-3,1.8],[-1.8,-1.8;-1.8,-1.8],[0,0;2.7,2.7],'CData',flip(imread('lab2.jpg')),'FaceColor','texturemap'); %Side Wall
 
             %Kitchen
-            PlaceObject('KitchenBench.ply', [-2.5,0,0]); % Dimensions L(y):7 W(x):1 H(z):1
-            PlaceObject('UpperCabinet1.ply', [-2.75,2.7,1.75]); % Dimensions L(y):1 W(x):0.75 H(z):0.75
-            PlaceObject('UpperCabinet2.ply', [-2.75,1.7,1.75]); % Dimensions L(y):1 W(x):0.75 H(z):0.75
-            PlaceObject('Fridge.ply', [-2.5,3.22,0]); % Dimensions L(y):1.25 W(x):1 H(z):2.25
+            PlaceObject('KitchenBenchWide.ply', [0,0,0]); % Dimensions L(y):7 W(x):1 H(z):1
+            PlaceObject('UpperCabinet1.ply', [-0.75,2.7,1.75]); % Dimensions L(y):1 W(x):0.75 H(z):0.75
+            PlaceObject('UpperCabinet2.ply', [-0.75,1.7,1.75]); % Dimensions L(y):1 W(x):0.75 H(z):0.75
+            PlaceObject('Fridge.ply', [0,3.22,0]); % Dimensions L(y):1.25 W(x):1 H(z):2.25
             
             % Safety Features
-            %PlaceObject('ESBtable.ply', [-1.1,-1.2,1]);
-            %PlaceObject('FE.ply', [-2.8,1.5,0.39]);
+            PlaceObject('ESBwall.ply', [-0.3,-3.8,0.8]);
+            PlaceObject('FE.ply', [-0.5,-3.9,0.39]);
 
             %PlaceObject('SeatedGirl.ply', [-2.5,-1.2,0])
 
-            PlaceObject('hotwaterdispenser.ply', [-3,-2.5,1.2]) % Set origin at the tap
+            PlaceObject('hotwaterdispenser.ply', self.WATER_LOCATION); % Set origin at the tap
 
-            PlaceObject('hotwaterdispenser.ply', [-3,-2,1.2]) % Set origin at the tap             %change to milk dispenser 1
-            PlaceObject('hotwaterdispenser.ply', [-3,-1.5,1.2]) % Set origin at the tap             %change to milk dispenser 2
+            PlaceObject('milkdispenserV2.ply', self.SKIM_MILK_LOCATION); % Set origin at the tap
+            PlaceObject('milkdispenserV2.ply', self.REGULAR_MILK_LOCATION); % Set origin at the tap
 
             PlaceObject('teaContainer_EnglishBreakfast.ply',self.ENGLISH_BREAKFAST_LOCATION);
             PlaceObject('teaContainer_Green.ply',self.GREEN_TEA_LOCATION);
             PlaceObject('teaContainer_LemonAndGinger.ply',self.LEMON_GINGER_TEA_LOCATION);
 
-            PlaceObject('sugarcontainer.ply',[-3.2,2.2,1]);
-            %self.sugarcontainer = MoveableObject('sugarcontainer.ply'); %Added a sugar container, should this become an unmovable object and then add movable sugar cubes? - Yeah, I think so 
-            %self.sugarcontainer.Move(transl(-3.2,2.2,1));
+            PlaceObject('sugarcontainer.ply',[-1.2,-3.5,1]);
 
             self.cup = MoveableObject('cup.ply');
-            self.cup.Move(transl(-3,2,2)); %Starts inside Upper Cabinet 2 (left cabinet)
+            self.cup.Move(transl(-0.2,-3.5,1.04)); %Starts inside Upper Cabinet 2 (left cabinet)
           
             self.spoon = MoveableObject('spoon.ply');
-            self.spoon.Move(transl(-3,2.8,1.05)); %Starts on the bench for now
+            self.spoon.Move(transl(-1,-3.5,1.05)); %Starts on the bench for now
 
-            %self.teaBag = MoveableObject('teabag.ply');
-            %self.teaBag.Move(transl(-3,2.6,1.15)); %Starts on the bench for now
+%             Tea bag will appear once collected from box?
+%             self.teaBag = MoveableObject('teabag.ply');
+%             self.teaBag.Move(transl(-3,2.6,1.15)); %Starts on the bench for now
 
             self.sugarcube = MoveableObject('sugarcube.ply'); %Added a sugar container, should this become an unmovable object and then add movable sugar cubes?
-            self.sugarcube.Move(transl(-3.2,2.2,1.2));
-
-            %self.milk = MoveableObject('milk.ply'); %Starts inside the fridge
-            %self.milk.Move(transl(-3,4,1.15));
+            self.sugarcube.Move(transl(-1.2,-3.5,1.2));
 
             % Initialise robot
             self.robot = LinearDobot(false);
@@ -186,7 +179,7 @@ end
 function GetObject(model, location, q, steps, L)
     L.mlog = {L.DEBUG,mfilename('class'),['GetObject: ','Called']};
 
-    q = model.ikine(location,q)
+    q = model.ikine(location,q) % TODO change to ikcon ?
     L.mlog = {L.DEBUG,mfilename('class'),['GetObject: Set of joints to pick up object at ',L.MatrixToString(location),' = ',L.MatrixToString(q)]};
 
     tr = model.fkine(q)
@@ -204,7 +197,7 @@ end
 function MoveObject(model, object, q, steps, L)
     L.mlog = {L.DEBUG,mfilename('class'),['MoveObject: ','Called']};
 
-    q = model.ikine(object.goalLocation,q)
+    q = model.ikine(object.goalLocation,q) % TODO change to ikcon ?
     L.mlog = {L.DEBUG,mfilename('class'),['MoveObject: Set of joints to move object to ',L.MatrixToString(object.goalLocation),' = ',L.MatrixToString(q)]};
 
     tr = model.fkine(q)
