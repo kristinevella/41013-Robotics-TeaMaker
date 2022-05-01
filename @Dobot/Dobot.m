@@ -35,8 +35,8 @@ function GetDobotRobot(self)
     L(2) = Link('d',0.103,    'a',0,      'alpha',-pi/2,  'offset',0, 'qlim',[deg2rad(-360),deg2rad(360)]);
     L(3) = Link('d',0,        'a',0.135,  'alpha',0,      'offset',0, 'qlim',[deg2rad(-360),deg2rad(360)]);
     L(4) = Link('d',0,        'a',0.147,  'alpha',0,      'offset',0, 'qlim',[deg2rad(-360),deg2rad(360)]);
-    L(5) = Link('d',0,        'a',0,      'alpha',-pi/2,  'offset',0, 'qlim',[deg2rad(-360),deg2rad(360)]);
-    L(6) = Link('d',0,        'a',0,      'alpha',0,      'offset',0, 'qlim',[deg2rad(-360),deg2rad(360)]);
+    L(5) = Link('d',0,        'a',0.06,      'alpha',-pi/2,  'offset',0, 'qlim',[deg2rad(-360),deg2rad(360)]);
+    L(6) = Link('d',0.1,      'a',0,      'alpha',0,      'offset',0, 'qlim',[deg2rad(-360),deg2rad(360)]);
 
     % Create the UR5 model mounted on a linear rail
 %     L(1) = Link([pi     0       0       pi/2    1]); % PRISMATIC Link
