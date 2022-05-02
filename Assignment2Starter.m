@@ -15,7 +15,10 @@ classdef Assignment2Starter < handle
         robot;
 
         % Interactive objects
-        cup;
+        cup1;
+        cup2;
+        cup3;
+        cup4;
         teaBag;
         sugarcube;
         spoon;
@@ -68,18 +71,39 @@ classdef Assignment2Starter < handle
 
             PlaceObject('sugarcontainer.ply',[-1.2,-3.5,1]);
 
-            self.cup = MoveableObject('cup.ply');
-            self.cup.Move(transl(-0.2,-3.5,1.04)); %Starts inside Upper Cabinet 2 (left cabinet)
+            self.cup1 = MoveableObject('cup.ply');
+            self.cup1.Move(transl(-0.2,-3.3,1.04));
+
+            self.cup2 = MoveableObject('cup.ply');
+            self.cup2.Move(transl(-0.2,-3.1,1.04));
+
+            self.cup3 = MoveableObject('cup.ply');
+            self.cup3.Move(transl(-0.2,-2.9,1.04));
+
+            self.cup4 = MoveableObject('cup.ply');
+            self.cup4.Move(transl(-0.2,-2.7,1.04));
+
+            self.coaster1 = MoveableObject('coaster.ply');
+            self.coaster1.Move(transl(-0.20,-3.6,1.04));
+
+            self.coaster2 = MoveableObject('coaster.ply');
+            self.coaster2.Move(transl(-0.45,-3.6,1.04));
+
+            self.coaster3 = MoveableObject('coaster.ply');
+            self.coaster3.Move(transl(-0.70,-3.6,1.04));
+
+            self.coaster4 = MoveableObject('coaster.ply');
+            self.coaster4.Move(transl(-0.95,-3.6,1.04));
           
             self.spoon = MoveableObject('spoon.ply');
-            self.spoon.Move(transl(-1,-3.5,1.05)); %Starts on the bench for now
+            self.spoon.Move(transl(-1,-3.5,1.05)); 
 
 %             Tea bag will appear once collected from box?
 %             self.teaBag = MoveableObject('teabag.ply');
 %             self.teaBag.Move(transl(-3,2.6,1.15)); %Starts on the bench for now
 
             self.sugarcube = MoveableObject('sugarcube.ply'); 
-            self.sugarcube.Move(transl(-1.2,-3.5,1.2));
+            self.sugarcube.Move(transl(-1.2,-3.5,1.05));
 
             self.sprayBottle = MoveableObject('sprayBottle.ply'); % spray bottle will be moved around workspace and dobot must avoid collision
             self.sprayBottle.Move(transl(-0.2,-2.5,1));
