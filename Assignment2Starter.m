@@ -1,11 +1,11 @@
 classdef Assignment2Starter < handle
     properties (Constant)
-        WATER_LOCATION = [-1,-2,1.2];
-        SKIM_MILK_LOCATION = [-1,-2.5,1.2];
-        REGULAR_MILK_LOCATION = [-1,-2.9,1.2];
-        ENGLISH_BREAKFAST_LOCATION = [-0.8,-1.4,1.2];
-        GREEN_TEA_LOCATION = [-0.5,-1.4,1.2];
-        LEMON_GINGER_TEA_LOCATION = [-0.2,-1.4,1.2];
+        WATER_LOCATION = [-1,-2.3,1.2];
+        SKIM_MILK_LOCATION = [-1,-2.7,1.2];
+        REGULAR_MILK_LOCATION = [-1,-3,1.2];
+        ENGLISH_BREAKFAST_LOCATION = [-1,-1.9,1.2];
+        GREEN_TEA_LOCATION = [-0.7,-1.9,1.2];
+        LEMON_GINGER_TEA_LOCATION = [-0.4,-1.9,1.2];
     end
     properties
         %Logger
@@ -69,10 +69,10 @@ classdef Assignment2Starter < handle
             PlaceObject('teaContainer_Green.ply',self.GREEN_TEA_LOCATION);
             PlaceObject('teaContainer_LemonAndGinger.ply',self.LEMON_GINGER_TEA_LOCATION);
 
-            PlaceObject('sugarcontainer.ply',[-1.2,-3.5,1]);
+            PlaceObject('sugarcontainer.ply',[-1.2,-3.5,1]); %% TODO Move (out of reach)
 
             self.cup1 = MoveableObject('cup.ply');
-            self.cup1.Move(transl(-0.2,-3.3,1.04));
+            self.cup1.Move(transl(-0.2,-2.5,1.04));
 
             self.cup2 = MoveableObject('cup.ply');
             self.cup2.Move(transl(-0.2,-3.1,1.04));
@@ -83,7 +83,7 @@ classdef Assignment2Starter < handle
             self.cup4 = MoveableObject('cup.ply');
             self.cup4.Move(transl(-0.2,-2.7,1.04));
 
-            self.coaster1 = MoveableObject('coaster.ply');
+            self.coaster1 = MoveableObject('coaster.ply'); %% Coasters are out of reach
             self.coaster1.Move(transl(-0.20,-3.6,1.04));
 
             self.coaster2 = MoveableObject('coaster.ply');
@@ -105,7 +105,7 @@ classdef Assignment2Starter < handle
             self.sugarcube.Move(transl(-1.2,-3.5,1.05));
 
             self.sprayBottle = MoveableObject('sprayBottle.ply'); % spray bottle will be moved around workspace and dobot must avoid collision
-            self.sprayBottle.Move(transl(-0.2,-2.5,1));
+            self.sprayBottle.Move(transl(-0.2,-3.3,1));
 
             % Initialise robot
             self.robot = LinearDobot(false);
@@ -120,22 +120,22 @@ classdef Assignment2Starter < handle
          
             %% 1. Pickup cup and place under the water dispenser
             q = self.robot.model.getpos(); % ** Change q to suit 
-            GetObject(self.robot.model, self.cup.currentLocation, q, 50, self.L); % Get the cup
+            GetObject(self.robot.model, self.cup1.currentLocation, q, 50, self.L); % Get the cup TODO change to allow multiple cups 
             
-            self.cup.goalLocation = self.WATER_LOCATION;
+            self.cup1.goalLocation = transl(self.WATER_LOCATION);
             q = self.robot.model.getpos(); % ** Change q to suit
-            MoveObject(self.robot.model, self.cup, q, 50, self.L); % Pick up cup and move to under water dispenser
+            MoveObject(self.robot.model, self.cup1, q, 50, self.L); % Pick up cup and move to under water dispenser
 
             % TODO dispense water? Press button, water flows down to cup?
 
             %% 2. Get appropriate teabag (selected from UI) and place in cup
             switch teaType
                 case 1
-                    selectedTeaLocation = self.ENGLISH_BREAKFAST_LOCATION;
+                    selectedTeaLocation = transl(self.ENGLISH_BREAKFAST_LOCATION);
                 case 2
-                    selectedTeaLocation = self.GREEN_TEA_LOCATION;
+                    selectedTeaLocation = transl(self.GREEN_TEA_LOCATION);
                 case 3
-                    selectedTeaLocation = self.LEMON_GINGER_TEA_LOCATION;
+                    selectedTeaLocation = transl(self.LEMON_GINGER_TEA_LOCATION);
                 otherwise
                     self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'Invalid tea request - Order cancelled']};
                     % Cancel order ?? TODO
@@ -144,10 +144,12 @@ classdef Assignment2Starter < handle
             q = self.robot.model.getpos(); % ** Change q to suit 
             GetObject(self.robot.model, selectedTeaLocation, q, 50, self.L); % Go to the teabag location
             
-            self.teaBag = MoveableObject('teabag.ply',selectedTeaLocation);
-            self.teaBag.goalLocation = self.cup.currentLocation;
+            self.teaBag = MoveableObject('teabag.ply'); % Instantiate tea bag
+            self.teaBag.Move(selectedTeaLocation);
+
+            self.teaBag.goalLocation = self.cup1.currentLocation;
             q = self.robot.model.getpos(); % ** Change q to suit
-            MoveObject(self.robot.model, self.teabag, q, 100, self.L); % Pick up teabag and place in cup
+            MoveObject(self.robot.model, self.teaBag, q, 100, self.L); % Pick up teabag and place in cup
 
             %% 3. Get sugar (quantity per UI) and place in cup
             if sugarQuantity > 0                                        % Done only if sugar was requested 
@@ -155,7 +157,7 @@ classdef Assignment2Starter < handle
                     q = self.robot.model.getpos(); % ** Change q to suit 
                     GetObject(self.robot.model, self.sugarcube.currentLocation, q, 50, self.L); % Go to the sugar canister
                     
-                    self.sugarcube.goalLocation = self.cup.currentLocation;
+                    self.sugarcube.goalLocation = transl(self.cup1.currentLocation);
                     q = self.robot.model.getpos(); % ** Change q to suit
                     MoveObject(self.robot.model, self.sugarcube, q, 100, self.L); % Pick up sugercube and place in cup
                 end
@@ -177,11 +179,11 @@ classdef Assignment2Starter < handle
 
             if milkType > 0
                 q = self.robot.model.getpos(); % ** Change q to suit 
-                GetObject(self.robot.model, self.cup.currentLocation, q, 50, self.L); % Get the cup
+                GetObject(self.robot.model, self.cup1.currentLocation, q, 50, self.L); % Get the cup
                 
-                self.cup.goalLocation = selectedMilkLocation;
+                self.cup1.goalLocation = transl(selectedMilkLocation);
                 q = self.robot.model.getpos(); % ** Change q to suit
-                MoveObject(self.robot.model, self.cup, q, 100, self.L); % Pick up cup and move to under milk dispenser
+                MoveObject(self.robot.model, self.cup1, q, 100, self.L); % Pick up cup and move to under milk dispenser
             end 
 
             % TODO dispense milk? Press button, milk flows down to cup?
@@ -189,12 +191,11 @@ classdef Assignment2Starter < handle
 
             %% 5. Pickup cup and place on appropriate available coaster
             q = self.robot.model.getpos(); % ** Change q to suit 
-            GetObject(self.robot.model, self.cup.currentLocation, q, 50, self.L); % Get the cup
+            GetObject(self.robot.model, self.cup1.currentLocation, q, 50, self.L); % Get the cup
             
-%             TODO Uncomment once coaster exists
-%             self.cup.goalLocation = self.coaster1.currentLocation; % will need to change for multiple cups of tea TODO
-%             q = self.robot.model.getpos(); % ** Change q to suit
-%             MoveObject(self.robot.model, self.cup, q, 50, self.L); % Pick up cup and move to coaster
+            self.cup1.goalLocation = transl(self.coaster1.currentLocation); % will need to change for multiple cups of tea TODO
+            q = self.robot.model.getpos(); % ** Change q to suit
+            MoveObject(self.robot.model, self.cup1, q, 50, self.L); % Pick up cup and move to coaster
             
             disp('Task 1 - Build model and environment: Complete');
             self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'Complete']};
