@@ -23,6 +23,7 @@ classdef Assignment2Starter < handle
         coaster2;
         coaster3;
         coaster4;
+        sprayBottle;
 
     end
     methods
@@ -77,8 +78,11 @@ classdef Assignment2Starter < handle
 %             self.teaBag = MoveableObject('teabag.ply');
 %             self.teaBag.Move(transl(-3,2.6,1.15)); %Starts on the bench for now
 
-            self.sugarcube = MoveableObject('sugarcube.ply'); %Added a sugar container, should this become an unmovable object and then add movable sugar cubes?
+            self.sugarcube = MoveableObject('sugarcube.ply'); 
             self.sugarcube.Move(transl(-1.2,-3.5,1.2));
+
+            self.sprayBottle = MoveableObject('sprayBottle.ply'); % spray bottle will be moved around workspace and dobot must avoid collision
+            self.sprayBottle.Move(transl(-0.2,-2.5,1));
 
             % Initialise robot
             self.robot = LinearDobot(false);
