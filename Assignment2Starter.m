@@ -95,8 +95,7 @@ classdef Assignment2Starter < handle
             self.coaster4 = MoveableObject('coaster.ply');
             self.coaster4.Move(transl(-0.95,-3.6,1.04));
           
-            self.spoon = MoveableObject('spoon.ply');
-            self.spoon.Move(transl(-1,-3.5,1.05)); 
+
 
 %             Tea bag will appear once collected from box?
 %             self.teaBag = MoveableObject('teabag.ply');
