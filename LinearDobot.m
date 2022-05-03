@@ -83,7 +83,7 @@ function PlotAndColourRobot(self)%robot,workspace)
 
     % Display robot
     %self.model.plot3d(zeros(1,self.model.n),'noarrow','workspace',self.workspace);
-    self.model.plot3d([0,0,5,15,0,0],'noarrow','workspace',self.workspace);
+    self.model.plot3d([0,deg2rad(135),deg2rad(5),deg2rad(90),0,0],'noarrow','workspace',self.workspace);
     if isempty(findobj(get(gca,'Children'),'Type','Light'))
         camlight
     end  
