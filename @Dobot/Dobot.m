@@ -55,7 +55,7 @@ function PlotAndColourRobot(self)%robot,workspace)
             [ faceData, vertexData, plyData{linkIndex+1} ] = plyread(['DobotLink',num2str(linkIndex),'Gripper.ply'],'tri'); %#ok<AGROW>
         else
             [ faceData, vertexData, plyData{linkIndex+1} ] = plyread(['DobotLink',num2str(linkIndex),'.ply'],'tri'); %#ok<AGROW>
-            % linkIndex     % Used for debugging in finding which link was
+            linkIndex     % Used for debugging in finding which link was
             % crashing out when loading
         end
         self.model.faces{linkIndex+1} = faceData;
