@@ -10,7 +10,7 @@ classdef Dobot < handle
         useGripper = false;        
     end
     
-    methods%% Class for UR5 robot simulation
+    methods%% Class for Dobot robot simulation
 function self = Dobot(useGripper)
     self.useGripper = useGripper;
     
@@ -23,45 +23,27 @@ self.GetDobotRobot();
 self.PlotAndColourRobot();%robot,workspace);
 end
 
-%% GetUR5Robot
-% Given a name (optional), create and return a UR5 robot model
+%% GetDobotRobot
+% Given a name (optional), create and return a Dobot robot model
 function GetDobotRobot(self)
 %     if nargin < 1
         % Create a unique name (ms timestamp after 1ms pause)
         pause(0.001);
         name = ['Dobot',datestr(now,'yyyymmddTHHMMSSFFF')];
 %     end
-    L(1) = Link([pi     0       0       pi/2    1]); % PRISMATIC Link
-    L(2) = Link('d',0.103,    'a',0,      'alpha',-pi/2,  'offset',0, 'qlim',[deg2rad(-360),deg2rad(360)]);
-    L(3) = Link('d',0,        'a',0.135,  'alpha',0,      'offset',0, 'qlim',[deg2rad(-360),deg2rad(360)]);
-    L(4) = Link('d',0,        'a',0.147,  'alpha',0,      'offset',0, 'qlim',[deg2rad(-360),deg2rad(360)]);
-    L(5) = Link('d',0,        'a',0.06,      'alpha',-pi/2,  'offset',0, 'qlim',[deg2rad(-360),deg2rad(360)]);
-    L(6) = Link('d',0.1,      'a',0,      'alpha',0,      'offset',0, 'qlim',[deg2rad(-360),deg2rad(360)]);
-
-    % Create the UR5 model mounted on a linear rail
-%     L(1) = Link([pi     0       0       pi/2    1]); % PRISMATIC Link
-%     L(2) = Link([0      0.1599  0       -pi/2   0]);
-%     L(3) = Link([0      0.1357  0.425   -pi     0]);
-%     L(4) = Link([0      0.1197  0.39243 pi      0]);
-%     L(5) = Link([0      0.093   0       -pi/2   0]);
-%     L(6) = Link([0      0.093   0       -pi/2	0]);
-%     L(7) = Link([0      0       0       0       0]);
-    
-    % Incorporate joint limits
-%     L(1).qlim = [-0.8 0];
-%     L(2).qlim = [-360 360]*pi/180;
-%     L(3).qlim = [-90 90]*pi/180;
-%     L(4).qlim = [-170 170]*pi/180;
-%     L(5).qlim = [-360 360]*pi/180;
-%     L(6).qlim = [-360 360]*pi/180;
-%     L(7).qlim = [-360 360]*pi/180;
-% 
-%     L(3).offset = -pi/2;
-%     L(5).offset = -pi/2;
+    L(1) = Link([pi     0       0       pi/2    1]); % PRISMATIC Link - copied from the LinearUR5 class
+    L(1).qlim = [-1.33 0];
+    L(2) = Link('d',0.103+0.0362,    'a',0,      'alpha',-pi/2,  'offset',0, 'qlim',[deg2rad(-90),deg2rad(90)]);
+    L(3) = Link('d',0,        'a',0.135,  'alpha',0,      'offset',0, 'qlim',[deg2rad(-85),deg2rad(0)]);
+    L(4) = Link('d',0,        'a',0.147,  'alpha',0,      'offset',0, 'qlim',[deg2rad(-10),deg2rad(90)]);
+    L(5) = Link('d',0,        'a',0.06,      'alpha',-pi/2,  'offset',0, 'qlim',[deg2rad(-180),deg2rad(180)]);
+    L(6) = Link('d',0.1,      'a',0,      'alpha',0,      'offset',0, 'qlim',[deg2rad(-90),deg2rad(90)]);
     
     self.model = SerialLink(L,'name',name);
     
-    % Rotate robot to the correct orientation
+    % Original LinearUR5 code has the base rotated which persists in this
+    % class (due to the orientation of the prismatic link). Rotate the
+    % robot when used in its desired environment
     self.model.base = self.model.base * trotx(pi/2) * troty(pi/2);
 end
 %% PlotAndColourRobot
@@ -73,7 +55,8 @@ function PlotAndColourRobot(self)%robot,workspace)
             [ faceData, vertexData, plyData{linkIndex+1} ] = plyread(['DobotLink',num2str(linkIndex),'Gripper.ply'],'tri'); %#ok<AGROW>
         else
             [ faceData, vertexData, plyData{linkIndex+1} ] = plyread(['DobotLink',num2str(linkIndex),'.ply'],'tri'); %#ok<AGROW>
-            linkIndex
+            % linkIndex     % Used for debugging in finding which link was
+            % crashing out when loading
         end
         self.model.faces{linkIndex+1} = faceData;
         self.model.points{linkIndex+1} = vertexData;
