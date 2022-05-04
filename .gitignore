@@ -3,6 +3,7 @@
 
 # Log files
 *.log
+*.bak
 
 # Packaged app and toolbox files
 *.mlappinstall
