@@ -3,9 +3,9 @@ classdef Assignment2Starter < handle
         WATER_LOCATION = [-1,-2.3,1.2];
         SKIM_MILK_LOCATION = [-1,-2.7,1.2];
         REGULAR_MILK_LOCATION = [-1,-3,1.2];
-        ENGLISH_BREAKFAST_LOCATION = [-1,-1.8,1.2];
-        GREEN_TEA_LOCATION = [-0.7,-1.8,1.2];
-        LEMON_GINGER_TEA_LOCATION = [-0.4,-1.8,1.2];
+        ENGLISH_BREAKFAST_LOCATION = [-1,-1.7,1.2];
+        GREEN_TEA_LOCATION = [-0.7,-1.7,1.2];
+        LEMON_GINGER_TEA_LOCATION = [-0.4,-1.7,1.2];
     end
     properties
         %Logger
@@ -193,7 +193,7 @@ classdef Assignment2Starter < handle
             q = self.robot.model.getpos(); % ** Change q to suit 
             GetObject(self.robot.model, self.cup1.currentLocation, q, 50, self.L); % Get the cup
             
-            self.cup1.goalLocation = transl(self.coaster1.currentLocation); % will need to change for multiple cups of tea TODO
+            self.cup1.goalLocation = self.coaster1.currentLocation; % will need to change for multiple cups of tea TODO
             q = self.robot.model.getpos(); % ** Change q to suit
             MoveObject(self.robot.model, self.cup1, q, 50, self.L); % Pick up cup and move to coaster
             
@@ -207,10 +207,10 @@ end
 function GetObject(model, location, q, steps, L)
     L.mlog = {L.DEBUG,mfilename('class'),['GetObject: ','Called']};
 
-    q = model.ikine(location,q) % TODO change to ikcon ?
+    q = model.ikine(location,q); % TODO change to ikcon ?
     L.mlog = {L.DEBUG,mfilename('class'),['GetObject: Set of joints to pick up object at ',L.MatrixToString(location),' = ',L.MatrixToString(q)]};
 
-    tr = model.fkine(q)
+    tr = model.fkine(q);
     L.mlog = {L.DEBUG,mfilename('class'),['GetObject: Checking result using fkine: ', L.MatrixToString(tr)]};
 
     modelTraj = jtraj(model.getpos,q,steps);
