@@ -3,9 +3,9 @@ classdef Assignment2Starter < handle
         WATER_LOCATION = [-1,-2.3,1.2];
         SKIM_MILK_LOCATION = [-1,-2.7,1.2];
         REGULAR_MILK_LOCATION = [-1,-3,1.2];
-        ENGLISH_BREAKFAST_LOCATION = [-1,-1.9,1.2];
-        GREEN_TEA_LOCATION = [-0.7,-1.9,1.2];
-        LEMON_GINGER_TEA_LOCATION = [-0.4,-1.9,1.2];
+        ENGLISH_BREAKFAST_LOCATION = [-1,-1.8,1.2];
+        GREEN_TEA_LOCATION = [-0.7,-1.8,1.2];
+        LEMON_GINGER_TEA_LOCATION = [-0.4,-1.8,1.2];
     end
     properties
         %Logger
@@ -72,16 +72,16 @@ classdef Assignment2Starter < handle
             PlaceObject('sugarcontainer.ply',[-1.2,-3.5,1]); %% TODO Move (out of reach)
 
             self.cup1 = MoveableObject('cup.ply');
-            self.cup1.Move(transl(-0.2,-2.5,1.04));
+            self.cup1.Move(transl(-0.3,-2.5,1.04));
 
             self.cup2 = MoveableObject('cup.ply');
-            self.cup2.Move(transl(-0.2,-3.1,1.04));
+            self.cup2.Move(transl(-0.3,-3.1,1.04));
 
             self.cup3 = MoveableObject('cup.ply');
-            self.cup3.Move(transl(-0.2,-2.9,1.04));
+            self.cup3.Move(transl(-0.3,-2.9,1.04));
 
             self.cup4 = MoveableObject('cup.ply');
-            self.cup4.Move(transl(-0.2,-2.7,1.04));
+            self.cup4.Move(transl(-0.3,-2.7,1.04));
 
             self.coaster1 = MoveableObject('coaster.ply'); %% Coasters are out of reach
             self.coaster1.Move(transl(-0.20,-3.6,1.04));
@@ -108,7 +108,7 @@ classdef Assignment2Starter < handle
             self.sprayBottle.Move(transl(-0.2,-3.3,1));
 
             % Initialise robot
-            self.robot = LinearDobot(false);
+            self.robot = Dobot(false);
           
             axis equal
             camlight

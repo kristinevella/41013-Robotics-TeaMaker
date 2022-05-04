@@ -1,5 +1,8 @@
 classdef Dobot < handle
     properties
+        %Logger
+        L = SingleInstance.Logger;
+
         %> Robot model
         model;
         
@@ -44,7 +47,7 @@ function GetDobotRobot(self)
     % Original LinearUR5 code has the base rotated which persists in this
     % class (due to the orientation of the prismatic link). Rotate the
     % robot when used in its desired environment
-    self.model.base = self.model.base * trotx(pi/2) * troty(pi/2);
+    self.model.base = self.model.base * transl(-0.7,-3.3,1.08) * trotx(pi/2);
 end
 %% PlotAndColourRobot
 % Given a robot index, add the glyphs (vertices and faces) and
@@ -55,8 +58,8 @@ function PlotAndColourRobot(self)%robot,workspace)
             [ faceData, vertexData, plyData{linkIndex+1} ] = plyread(['DobotLink',num2str(linkIndex),'Gripper.ply'],'tri'); %#ok<AGROW>
         else
             [ faceData, vertexData, plyData{linkIndex+1} ] = plyread(['DobotLink',num2str(linkIndex),'.ply'],'tri'); %#ok<AGROW>
-            linkIndex     % Used for debugging in finding which link was
-            % crashing out when loading
+
+            self.L.mlog = {self.L.DEBUG,mfilename('class'),['PlotAndColourRobot:',' LinkIndex = ', num2str(linkIndex)]};     % Used for debugging in finding which link was crashing out when loading
         end
         self.model.faces{linkIndex+1} = faceData;
         self.model.points{linkIndex+1} = vertexData;
