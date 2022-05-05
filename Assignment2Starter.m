@@ -22,6 +22,7 @@ classdef Assignment2Starter < handle
         teaBag;
         sugarcube;
         spoon;
+        %coaster;
         coaster1;
         coaster2;
         coaster3;
@@ -83,17 +84,17 @@ classdef Assignment2Starter < handle
             self.cup4 = MoveableObject('cup.ply');
             self.cup4.Move(transl(-0.3,-2.7,1.04));
 
-            self.coaster1 = MoveableObject('coaster.ply'); %% Coasters are out of reach
-            self.coaster1.Move(transl(-0.20,-3.6,1.04));
-
-            self.coaster2 = MoveableObject('coaster.ply');
-            self.coaster2.Move(transl(-0.45,-3.6,1.04));
-
-            self.coaster3 = MoveableObject('coaster.ply');
-            self.coaster3.Move(transl(-0.70,-3.6,1.04));
-
-            self.coaster4 = MoveableObject('coaster.ply');
-            self.coaster4.Move(transl(-0.95,-3.6,1.04));
+%             self.coaster1 = MoveableObject('coaster.ply'); %% Coasters are out of reach
+%             self.coaster1.Move(transl(-0.20,-3.6,1.04));
+% 
+%             self.coaster2 = MoveableObject('coaster.ply');
+%             self.coaster2.Move(transl(-0.45,-3.6,1.04));
+% 
+%             self.coaster3 = MoveableObject('coaster.ply');
+%             self.coaster3.Move(transl(-0.70,-3.6,1.04));
+% 
+%             self.coaster4 = MoveableObject('coaster.ply');
+%             self.coaster4.Move(transl(-0.95,-3.6,1.04));
           
 
 
@@ -189,8 +190,36 @@ classdef Assignment2Starter < handle
             % TODO dispense milk? Press button, milk flows down to cup?
             % (button location?)
 
-            %% 5. Pickup cup and place on appropriate available coaster
+            %% 5. Pickup cup and place on appropriate available coaster (Visual servoing part)
             q = self.robot.model.getpos(); % ** Change q to suit 
+            % Create image target (coaster in the centre of the image plane)
+            pCoaster = [512; 512];
+            %Create coaster as a 3D point
+            coaster = [-0.45;-3.6;1.04];
+            plot_circle(coaster,0.05,'b') %TODO fill colour
+
+            %Add the camera (specs sismilar to Lab 8)
+            cam = CentralCamera('focal', 0.08, 'pixel', 10e-5, ...
+            'resolution', [1024 1024], 'centre', [512 512],'name', 'DOBOTcam');
+            % frame rate
+            fps = 25;
+            %Define values
+            %gain of the controler
+            lambda = 0.6;
+            %depth of the IBVS
+            depth = mean (coaster(1,:));
+
+            Tc0 = self.robot.model.fkine(q);
+
+            %plot camera and points
+            cam.T = Tc0;
+
+            %Display camera
+            cam.plot_camera('Tcam',Tc0 ,'label','scale',0.15);
+            lighting gouraud
+            light
+
+            
             GetObject(self.robot.model, self.cup1.currentLocation, q, 50, self.L); % Get the cup
             
             self.cup1.goalLocation = self.coaster1.currentLocation; % will need to change for multiple cups of tea TODO
