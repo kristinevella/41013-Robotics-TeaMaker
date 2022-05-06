@@ -192,6 +192,10 @@ classdef Assignment2Starter < handle
 
             %% 5. Pickup cup and place on appropriate available coaster (Visual servoing part)
             q = self.robot.model.getpos(); % ** Change q to suit 
+
+            %TODO Move robot to left side of linear rail facing coaster
+            %section while holding a cup find q values needed
+
             % Create image target (coaster in the centre of the image plane)
             pCoaster = [512; 512];
             %Create coaster as a 3D point
@@ -215,11 +219,29 @@ classdef Assignment2Starter < handle
             cam.T = Tc0;
 
             %Display camera
-            cam.plot_camera('Tcam',Tc0 ,'label','scale',0.15);
+            cam.plot_camera('Tcam',Tc0 ,'label','scale',0.05);
             lighting gouraud
             light
-
             
+            %Display in image view
+            %Project points to the image
+            p = cam.plot(coaster, 'Tcam', Tc0);
+            %camera view and plotting
+            cam.clf()
+            cam.plot(pCoaster, '*'); % create the camera view
+            cam.hold(true);
+            cam.plot(coaster, 'Tcam', Tc0, 'o'); % create the camera view
+            pause(2)
+            cam.hold(true);
+            cam.plot(coaster);    % show initial view
+
+            %Initialise display arrays
+            vel_p = [];
+            uv_p = [];
+            history = [];
+            pause
+
+            %TODO continue with visual servoing
             GetObject(self.robot.model, self.cup1.currentLocation, q, 50, self.L); % Get the cup
             
             self.cup1.goalLocation = self.coaster1.currentLocation; % will need to change for multiple cups of tea TODO
