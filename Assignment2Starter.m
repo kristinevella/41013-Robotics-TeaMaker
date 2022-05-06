@@ -236,7 +236,7 @@ end
 function GetObject(model, location, q, steps, L)
     L.mlog = {L.DEBUG,mfilename('class'),['GetObject: ','Called']};
 
-    q = model.ikine(location,q); % TODO change to ikcon ?
+    q = model.ikcon(location,q); % TODO change to ikcon ?
     L.mlog = {L.DEBUG,mfilename('class'),['GetObject: Set of joints to pick up object at ',L.MatrixToString(location),' = ',L.MatrixToString(q)]};
 
     tr = model.fkine(q);
@@ -254,7 +254,7 @@ end
 function MoveObject(model, object, q, steps, L)
     L.mlog = {L.DEBUG,mfilename('class'),['MoveObject: ','Called']};
 
-    q = model.ikine(object.goalLocation,q) % TODO change to ikcon ?
+    q = model.ikcon(object.goalLocation,q) % TODO change to ikcon ?
     L.mlog = {L.DEBUG,mfilename('class'),['MoveObject: Set of joints to move object to ',L.MatrixToString(object.goalLocation),' = ',L.MatrixToString(q)]};
 
     tr = model.fkine(q)
