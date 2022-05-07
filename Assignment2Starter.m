@@ -58,7 +58,9 @@ classdef Assignment2Starter < handle
             % Safety Features
             PlaceObject('ESBwall.ply', [-0.3,-3.8,0.8]);
             PlaceObject('FE.ply', [-0.5,-3.9,0.39]);
-
+                %Glass barrier
+            surf([-0.1,-0.1;-0.1,-0.1],[-3.7,-3.7;-1.3,-1.3],[1,2.5;1,2.5],'CData',flip(imread('glass.jpg')),'FaceColor','texturemap','FaceAlpha',0.3,'EdgeColor','none');
+            
             %PlaceObject('SeatedGirl.ply', [-2.5,-1.2,0])
 
             PlaceObject('hotwaterdispenser.ply', self.WATER_LOCATION); % Set origin at the tap
