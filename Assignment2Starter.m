@@ -192,14 +192,18 @@ classdef Assignment2Starter < handle
 
             %% 5. Pickup cup and place on appropriate available coaster (Visual servoing part)
             q = self.robot.model.getpos(); % ** Change q to suit 
+            GetObject(self.robot.model, self.cup1.currentLocation, q, 50, self.L); % Get the cup
 
+            q = self.robot.model.getpos(); % ** Change q to suit 
             %TODO Move robot to left side of linear rail facing coaster
             %section while holding a cup find q values needed
+            MoveToFindCoaster(self.robot.model, self.cup1, q, 100, self.L);
+            q = self.robot.model.getpos(); % ** Change q to suit 
 
             % Create image target (coaster in the centre of the image plane)
-            pCoaster = [512; 512];
+            coasterStar = [512; 512];
             %Create coaster as a 3D point
-            coaster = [-0.45;-3.6;1.04];
+            coaster = [-0.65;-3.6;1.04];
             plot_circle(coaster,0.05,'b') %TODO fill colour
 
             %Add the camera (specs sismilar to Lab 8)
@@ -228,7 +232,7 @@ classdef Assignment2Starter < handle
             p = cam.plot(coaster, 'Tcam', Tc0);
             %camera view and plotting
             cam.clf()
-            cam.plot(pCoaster, '*'); % create the camera view
+            cam.plot(coasterStar, '*'); % create the camera view
             cam.hold(true);
             cam.plot(coaster, 'Tcam', Tc0, 'o'); % create the camera view
             pause(2)
@@ -242,7 +246,7 @@ classdef Assignment2Starter < handle
             pause
 
             %TODO continue with visual servoing
-            GetObject(self.robot.model, self.cup1.currentLocation, q, 50, self.L); % Get the cup
+            
             
             self.cup1.goalLocation = self.coaster1.currentLocation; % will need to change for multiple cups of tea TODO
             q = self.robot.model.getpos(); % ** Change q to suit
@@ -258,7 +262,7 @@ end
 function GetObject(model, location, q, steps, L)
     L.mlog = {L.DEBUG,mfilename('class'),['GetObject: ','Called']};
 
-    q = model.ikcon(location,q); % TODO change to ikcon ?
+    q = model.ikcon(location,q); 
     L.mlog = {L.DEBUG,mfilename('class'),['GetObject: Set of joints to pick up object at ',L.MatrixToString(location),' = ',L.MatrixToString(q)]};
 
     tr = model.fkine(q);
@@ -276,7 +280,7 @@ end
 function MoveObject(model, object, q, steps, L)
     L.mlog = {L.DEBUG,mfilename('class'),['MoveObject: ','Called']};
 
-    q = model.ikcon(object.goalLocation,q) % TODO change to ikcon ?
+    q = model.ikcon(object.goalLocation,q)
     L.mlog = {L.DEBUG,mfilename('class'),['MoveObject: Set of joints to move object to ',L.MatrixToString(object.goalLocation),' = ',L.MatrixToString(q)]};
 
     tr = model.fkine(q)
@@ -290,3 +294,19 @@ function MoveObject(model, object, q, steps, L)
         drawnow()
     end
 end
+
+%Moves robot with object to ideal starting position to start visual servoing
+function MoveToFindCoaster(model, object, q, steps, L)
+    L.mlog = {L.DEBUG,mfilename('class'),['MoveToFindCoaster: ','Called']};
+
+    idealStartQs = [0 1.5609 0.7854 0.7854 0 0];
+
+    modelTraj = jtraj(model.getpos,idealStartQs,steps);
+    for i = 1:steps
+        model.animate(modelTraj(i,:));
+        modelTr = model.fkine(modelTraj(i,:));
+        object.Move(modelTr);
+        drawnow()
+    end
+end
+   
