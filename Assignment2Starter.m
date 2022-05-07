@@ -120,6 +120,15 @@ classdef Assignment2Starter < handle
             axis equal
             camlight
         end
+
+        % DEBUG
+        % TODO: Need to change initial parameters in RMRC each time depending on
+        % each unique trajectory to get the smoothest motion that doesn't
+        % exceed limits or hit singularities
+        function TestRMRC(self) 
+            RMRC(self.robot.model, self.cup1, transl(self.WATER_LOCATION), self.L);
+        end
+        % DEBUG END
         
         % Make tea using the robot
         function MakeTea(self, teaType, milkType, sugarQuantity)
@@ -130,8 +139,9 @@ classdef Assignment2Starter < handle
             GetObject(self.robot.model, self.cup1.currentLocation, q, 50, self.L); % Get the cup TODO change to allow multiple cups 
             
             self.cup1.goalLocation = transl(self.WATER_LOCATION);
-            q = self.robot.model.getpos(); % ** Change q to suit
-            MoveObject(self.robot.model, self.cup1, q, 50, self.L); % Pick up cup and move to under water dispenser
+            RMRC(self.robot.model, self.cup1, self.L);
+            %q = self.robot.model.getpos(); % ** Change q to suit
+            %MoveObject(self.robot.model, self.cup1, q, 50, self.L); % Pick up cup and move to under water dispenser
 
             % TODO dispense water? Press button, water flows down to cup?
 
@@ -145,7 +155,8 @@ classdef Assignment2Starter < handle
                     selectedTeaLocation = transl(self.LEMON_GINGER_TEA_LOCATION);
                 otherwise
                     self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'Invalid tea request - Order cancelled']};
-                    % Cancel order ?? TODO
+                    disp('Invalid tea request. Order has been cancelled, please try again');
+                    return
             end
             
             q = self.robot.model.getpos(); % ** Change q to suit 
@@ -181,7 +192,8 @@ classdef Assignment2Starter < handle
                     selectedMilkLocation = self.SKIM_MILK_LOCATION;
                 otherwise
                     self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'Invalid milk request - Order cancelled']};
-                    % Cancel order ?? TODO
+                    disp('Invalid milk request. Order has been cancelled, please try again');
+                    return
             end
 
             if milkType > 0
@@ -189,8 +201,9 @@ classdef Assignment2Starter < handle
                 GetObject(self.robot.model, self.cup1.currentLocation, q, 50, self.L); % Get the cup
                 
                 self.cup1.goalLocation = transl(selectedMilkLocation);
-                q = self.robot.model.getpos(); % ** Change q to suit
-                MoveObject(self.robot.model, self.cup1, q, 100, self.L); % Pick up cup and move to under milk dispenser
+                RMRC(self.robot.model, self.cup1, self.L);
+                %q = self.robot.model.getpos(); % ** Change q to suit
+                %MoveObject(self.robot.model, self.cup1, q, 100, self.L); % Pick up cup and move to under milk dispenser
             end 
 
             % TODO dispense milk? Press button, milk flows down to cup?
@@ -354,8 +367,9 @@ classdef Assignment2Starter < handle
             
             
             self.cup1.goalLocation = self.coaster1.currentLocation; % will need to change for multiple cups of tea TODO
-            q = self.robot.model.getpos(); % ** Change q to suit
-            MoveObject(self.robot.model, self.cup1, q, 50, self.L); % Pick up cup and move to coaster
+            RMRC(self.robot.model, self.cup1, self.L);
+            %q = self.robot.model.getpos(); % ** Change q to suit
+            %MoveObject(self.robot.model, self.cup1, q, 50, self.L); % Pick up cup and move to coaster
             
             disp('Task 1 - Build model and environment: Complete');
             self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'Complete']};
@@ -399,6 +413,134 @@ function MoveObject(model, object, q, steps, L)
         drawnow()
     end
 end
+
+% Resolved Motion Rate Control - Adapted from Lab9Solution_Question1
+function RMRC(model, object, L)
+L.mlog = {L.DEBUG,mfilename('class'),['RMRC: ','Called']};
+
+% Set parameters for the simulation
+t = 5;             % Total time (s)
+deltaT = 0.02;      % Control frequency
+steps = t/deltaT;   % No. of steps for simulation
+delta = 2*pi/steps; % Small angle change
+epsilon = 0.1;      % Threshold value for manipulability/Damped Least Squares
+W = diag([1 1 1 0.1 0.1 0.1]);    % Weighting matrix for the velocity vector (More emphasis on linear than angular here)
+
+% Allocate array data
+m = zeros(steps,1);             % Array for Measure of Manipulability
+qMatrix = zeros(steps,6);       % Array for joint anglesR
+qdot = zeros(steps,6);          % Array for joint velocities
+theta = zeros(3,steps);         % Array for roll-pitch-yaw angles
+x = zeros(3,steps);             % Array for x-y-z trajectory
+positionError = zeros(3,steps); % For plotting trajectory error
+angleError = zeros(3,steps);    % For plotting trajectory error
+
+q = model.getpos();
+T = model.fkine(q);
+
+% Set up trajectory, initial pose
+s = lspb(0,1,steps);                % Trapezoidal trajectory scalar
+for i=1:steps
+    x(1,i) = (1-s(i))*T(1,4) + s(i)*object.goalLocation(1,4); % Points in x
+    x(2,i) = (1-s(i))*T(2,4) + s(i)*object.goalLocation(2,4); % Points in y
+    x(3,i) = (1-s(i))*T(3,4) + s(i)*object.goalLocation(3,4); % Points in z
+    %x(3,i) = 0.5 + 0.2*sin(i*delta); % Points in z
+    % Maintain downwards facing
+    theta(1,i) = pi;                 % Roll angle 
+    theta(2,i) = 0;                  % Pitch angle
+    theta(3,i) = pi;                 % Yaw angle
+end
+ 
+T = [rpy2r(theta(1,1),theta(2,1),theta(3,1)) x(:,1);zeros(1,3) 1];          % Create transformation of first point and angle
+q0 = zeros(1,6);                                                            % Initial guess for joint angles
+qMatrix(1,:) = model.ikcon(T,q0);                                           % Solve joint angles to achieve first waypoint
+
+% Track the trajectory with RMRC
+for i = 1:steps-1
+    T = model.fkine(qMatrix(i,:));                                          % Get forward transformation at current joint state
+    deltaX = x(:,i+1) - T(1:3,4);                                         	% Get position error from next waypoint
+    Rd = rpy2r(theta(1,i+1),theta(2,i+1),theta(3,i+1));                     % Get next RPY angles, convert to rotation matrix
+    Ra = T(1:3,1:3);                                                        % Current end-effector rotation matrix
+    Rdot = (1/deltaT)*(Rd - Ra);                                            % Calculate rotation matrix error (requires small value for deltaT to work)
+    S = Rdot*Ra';                                                           % Skew symmetric! (TODO - Check week 6??????????)
+    linear_velocity = (1/deltaT)*deltaX;
+    angular_velocity = [S(3,2);S(1,3);S(2,1)];                              % Check the structure of Skew Symmetric matrix!!
+    deltaTheta = tr2rpy(Rd*Ra');                                            % Convert rotation matrix to RPY angles
+    xdot = W*[linear_velocity;angular_velocity];                          	% Calculate end-effector velocity to reach next waypoint.
+    J = model.jacob0(qMatrix(i,:));                                         % Get Jacobian at current joint state (Jacobian with respect to the base, alternatively to the end effector)
+    m(i) = sqrt(det(J*J'));
+    lambdaMax = 5E-2;
+    if m(i) < epsilon  % If manipulability is less than given threshold
+        lambda = (1 - m(i)/epsilon)*lambdaMax;
+    else
+        lambda = 0;
+    end
+    invJ = inv(J'*J + lambda *eye(6))*J';                                   % DLS Inverse
+    qdot(i,:) = (invJ*xdot)';                                               % Solve the RMRC equation (you may need to transpose the vector)
+    for j = 1:6                                                             % Loop through joints 1 to 6
+        if qMatrix(i,j) + deltaT*qdot(i,j) < model.qlim(j,1)                % If next joint angle is lower than joint limit...
+            qdot(i,j) = 0; % Stop the motor
+            L.mlog = {L.DEBUG,mfilename('class'),['RMRC: Next joint angle is lower than joint limit: ',num2str(qMatrix(i,j) + deltaT*qdot(i,j)),' < ',model.qlim(j,1),' - Motor stopped!']};
+        elseif qMatrix(i,j) + deltaT*qdot(i,j) > model.qlim(j,2)                 % If next joint angle is greater than joint limit ...
+            qdot(i,j) = 0; % Stop the motor
+            L.mlog = {L.DEBUG,mfilename('class'),['RMRC: Next joint angle is greater than joint limit: ',num2str(qMatrix(i,j) + deltaT*qdot(i,j)),' > ',model.qlim(j,2),' - Motor stopped!']};
+        end
+    end
+    qMatrix(i+1,:) = qMatrix(i,:) + deltaT*qdot(i,:);                       % Update next joint state based on joint velocities
+    positionError(:,i) = x(:,i+1) - T(1:3,4);                               % For plotting
+    angleError(:,i) = deltaTheta;                                           % For plotting
+end
+
+% DEBUG
+plot3(x(1,:),x(2,:),x(3,:),'k.','LineWidth',1);
+% DEBUG END
+
+for i = 1:steps
+    model.animate(qMatrix(i,:));
+    modelTr = model.fkine(qMatrix(i,:));
+    object.Move(modelTr);
+    drawnow()
+end
+
+% DEBUG
+for i = 1:6
+    figure(2)
+    subplot(3,2,i)
+    plot(qMatrix(:,i),'k','LineWidth',1)
+    title(['Joint ', num2str(i)])
+    ylabel('Angle (rad)')
+    refline(0,model.qlim(i,1));
+    refline(0,model.qlim(i,2));
+    
+    figure(3)
+    subplot(3,2,i)
+    plot(qdot(:,i),'k','LineWidth',1)
+    title(['Joint ',num2str(i)]);
+    ylabel('Velocity (rad/s)')
+    refline(0,0)
+end
+
+figure(4)
+subplot(2,1,1)
+plot(positionError'*1000,'LineWidth',1)
+refline(0,0)
+xlabel('Step')
+ylabel('Position Error (mm)')
+legend('X-Axis','Y-Axis','Z-Axis')
+
+subplot(2,1,2)
+plot(angleError','LineWidth',1)
+refline(0,0)
+xlabel('Step')
+ylabel('Angle Error (rad)')
+legend('Roll','Pitch','Yaw')
+figure(5)
+plot(m,'k','LineWidth',1)
+refline(0,epsilon)
+title('Manipulability')
+% DEBUG END
+
+end 
 
 %Moves robot with object to ideal starting position to start visual servoing
 function MoveToFindCoaster(model, object, q, steps, L)
