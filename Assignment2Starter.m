@@ -130,22 +130,30 @@ classdef Assignment2Starter < handle
 
         function LowerBarriers(self)
             self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'Called']};
-            for i = self.BARRIER_HEIGHT_MAX:-0.01:self.BARRIER_HEIGHT_MIN % Set max and min as constants???? TODO
-                self.frontBarrier.ZData(:,2) = i;
-                self.sideBarrier.ZData(:,2) = i;
-                pause(0.03)
+            if self.frontBarrier.ZData(1,2) && self.sideBarrier.ZData(1,2) == self.BARRIER_HEIGHT_MAX
+                for i = self.BARRIER_HEIGHT_MAX:-0.01:self.BARRIER_HEIGHT_MIN % Set max and min as constants???? TODO
+                    self.frontBarrier.ZData(:,2) = i;
+                    self.sideBarrier.ZData(:,2) = i;
+                    pause(0.03)
+                end
+                self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'Barrier height is now:', num2str(self.BARRIER_HEIGHT_MIN)]};
+            else 
+                self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'Barrier is already is lowered position']};
             end
-            self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'Barrier height is now:', self.BARRIER_HEIGHT_MIN]};
         end
 
         function RaiseBarriers(self)
             self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'Called']};
-            for i = self.BARRIER_HEIGHT_MIN:0.01:self.BARRIER_HEIGHT_MAX % Set max and min as constants???? TODO
-                self.frontBarrier.ZData(:,2) = i;
-                self.sideBarrier.ZData(:,2) = i;
-                pause(0.03)
+            if self.frontBarrier.ZData(1,2) && self.sideBarrier.ZData(1,2) == self.BARRIER_HEIGHT_MIN
+                for i = self.BARRIER_HEIGHT_MIN:0.01:self.BARRIER_HEIGHT_MAX % Set max and min as constants???? TODO
+                    self.frontBarrier.ZData(:,2) = i;
+                    self.sideBarrier.ZData(:,2) = i;
+                    pause(0.03)
+                end
+                self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'Barrier height is now:', num2str(self.BARRIER_HEIGHT_MAX)]};
+            else
+                self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'Barrier is already is raised position']};
             end
-            self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'Barrier height is now:', self.BARRIER_HEIGHT_MAX]};
         end
 
         % DEBUG
@@ -514,10 +522,10 @@ for i = 1:steps-1
     for j = 1:6                                                             % Loop through joints 1 to 6
         if qMatrix(i,j) + deltaT*qdot(i,j) < model.qlim(j,1)                % If next joint angle is lower than joint limit...
             qdot(i,j) = 0; % Stop the motor
-            L.mlog = {L.DEBUG,mfilename('class'),['RMRC: Next joint angle is lower than joint limit: ',num2str(qMatrix(i,j) + deltaT*qdot(i,j)),' < ',model.qlim(j,1),' - Motor stopped!']};
+            L.mlog = {L.DEBUG,mfilename('class'),['RMRC: Next joint angle is lower than joint limit: ',num2str(qMatrix(i,j) + deltaT*qdot(i,j)),' < ',num2str(model.qlim(j,1)),' - Motor stopped!']};
         elseif qMatrix(i,j) + deltaT*qdot(i,j) > model.qlim(j,2)                 % If next joint angle is greater than joint limit ...
             qdot(i,j) = 0; % Stop the motor
-            L.mlog = {L.DEBUG,mfilename('class'),['RMRC: Next joint angle is greater than joint limit: ',num2str(qMatrix(i,j) + deltaT*qdot(i,j)),' > ',model.qlim(j,2),' - Motor stopped!']};
+            L.mlog = {L.DEBUG,mfilename('class'),['RMRC: Next joint angle is greater than joint limit: ',num2str(qMatrix(i,j) + deltaT*qdot(i,j)),' > ',num2str(model.qlim(j,2)),' - Motor stopped!']};
         end
     end
     qMatrix(i+1,:) = qMatrix(i,:) + deltaT*qdot(i,:);                       % Update next joint state based on joint velocities
