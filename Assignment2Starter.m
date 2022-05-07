@@ -60,7 +60,7 @@ classdef Assignment2Starter < handle
             PlaceObject('FE.ply', [-0.5,-3.9,0.39]);
                 %Glass barrier
             surf([-0.1,-0.1;-0.1,-0.1],[-3.7,-3.7;-1.3,-1.3],[1,2.5;1,2.5],'CData',flip(imread('glass.jpg')),'FaceColor','texturemap','FaceAlpha',0.3,'EdgeColor','none');
-            
+            surf([-1.5,-1.5;-0.1,-0.1],[-3.7,-3.7;-3.7,-3.7],[1,2.5;1,2.5],'CData',flip(imread('glass.jpg')),'FaceColor','texturemap','FaceAlpha',0.3,'EdgeColor','none');
             %PlaceObject('SeatedGirl.ply', [-2.5,-1.2,0])
 
             PlaceObject('hotwaterdispenser.ply', self.WATER_LOCATION); % Set origin at the tap
