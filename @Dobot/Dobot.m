@@ -38,8 +38,8 @@ function GetDobotRobot(self)
     L(1).qlim = [-1.33 0];
     L(2) = Link('d',0.103+0.0362,    'a',0,      'alpha',-pi/2,  'offset',0, 'qlim',[deg2rad(-135),deg2rad(135)]);
     L(3) = Link('d',0,        'a',0.135,  'alpha',0,      'offset',-pi/2, 'qlim',[deg2rad(5),deg2rad(80)]);
-    L(4) = Link('d',0,        'a',0.147,  'alpha',0,      'offset',0, 'qlim',[deg2rad(15),deg2rad(170)]);
-    L(5) = Link('d',0,        'a',0.06,      'alpha',-pi/2,  'offset',0, 'qlim',[-pi/2,pi/2]);
+    L(4) = Link('d',0,        'a',0.147,  'alpha',0,      'offset',0, 'qlim',[deg2rad(-5),deg2rad(85)]);
+    L(5) = Link('d',0,        'a',0.06,      'alpha',-pi/2,  'offset',0, 'qlim',[deg2rad(-180),deg2rad(180)]);
     L(6) = Link('d',0.1,      'a',0,      'alpha',0,      'offset',0, 'qlim',[deg2rad(-85),deg2rad(85)]);
     
     self.model = SerialLink(L,'name',name);
@@ -47,7 +47,7 @@ function GetDobotRobot(self)
     % Original LinearUR5 code has the base rotated which persists in this
     % class (due to the orientation of the prismatic link). Rotate the
     % robot when used in its desired environment
-    self.model.base = self.model.base * transl(-0.7,-3.3,1.08) * trotx(pi/2);
+    self.model.base = self.model.base; %* transl(-0.7,-3.3,1.08) * trotx(pi/2); % Moved implementation of robot location from robot class, to Assignment2Starter
 end
 %% PlotAndColourRobot
 % Given a robot index, add the glyphs (vertices and faces) and
