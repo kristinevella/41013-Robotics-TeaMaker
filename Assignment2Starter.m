@@ -110,6 +110,8 @@ classdef Assignment2Starter < handle
 
             % Initialise robot
             self.robot = Dobot(false);
+            self.robot.model.base = self.robot.model.base * transl(-0.7,-3.3,1.08) * trotx(pi/2); % Moved implementation of robot location from robot class, to Assignment2Starter
+
           
             axis equal
             camlight
