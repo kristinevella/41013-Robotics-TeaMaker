@@ -6,6 +6,8 @@ classdef Assignment2Starter < handle
         ENGLISH_BREAKFAST_LOCATION = [-1,-1.7,1.2];
         GREEN_TEA_LOCATION = [-0.7,-1.7,1.2];
         LEMON_GINGER_TEA_LOCATION = [-0.4,-1.7,1.2];
+        BARRIER_HEIGHT_MIN = 1;
+        BARRIER_HEIGHT_MAX = 2.5;
     end
     properties
         %Logger
@@ -28,6 +30,8 @@ classdef Assignment2Starter < handle
         coaster3;
         coaster4;
         sprayBottle;
+        sideBarrier;
+        frontBarrier;
 
     end
     methods
@@ -45,7 +49,7 @@ classdef Assignment2Starter < handle
             
             hold on
             % Surrounding Surfaces
-            surf([-2,-2;4,4],[-4,4.5;-4,4.5],[0.01,0.01;0.01,0.01],'CData',imread('tiles.jpg'),'FaceColor','texturemap'); %Floor
+            surf([-1.6,-1.6;4,4],[-4,4.5;-4,4.5],[0.01,0.01;0.01,0.01],'CData',imread('tiles.jpg'),'FaceColor','texturemap'); %Floor
             %surf([-4,-4;-4,-4],[-4,4;-4,4],[0,0;2.7,2.7],'CData',flip(imread('tiles.jpg')),'FaceColor','texturemap'); %Back Wall
             %surf([-3,1.8;-3,1.8],[-1.8,-1.8;-1.8,-1.8],[0,0;2.7,2.7],'CData',flip(imread('lab2.jpg')),'FaceColor','texturemap'); %Side Wall
 
@@ -58,9 +62,9 @@ classdef Assignment2Starter < handle
             % Safety Features
             PlaceObject('ESBwall.ply', [-0.3,-3.8,0.8]);
             PlaceObject('FE.ply', [-0.5,-3.9,0.39]);
-                %Glass barrier
-            surf([-0.1,-0.1;-0.1,-0.1],[-3.7,-3.7;-1.3,-1.3],[1,2.5;1,2.5],'CData',flip(imread('glass.jpg')),'FaceColor','texturemap','FaceAlpha',0.3,'EdgeColor','none');
-            surf([-1.5,-1.5;-0.1,-0.1],[-3.7,-3.7;-3.7,-3.7],[1,2.5;1,2.5],'CData',flip(imread('glass.jpg')),'FaceColor','texturemap','FaceAlpha',0.3,'EdgeColor','none');
+            %Glass barrier - Begins in lowered position
+            self.frontBarrier = surf([-0.1,-0.1;-0.1,-0.1],[-3.7,-3.7;-1.3,-1.3],[self.BARRIER_HEIGHT_MIN,self.BARRIER_HEIGHT_MIN;self.BARRIER_HEIGHT_MIN,self.BARRIER_HEIGHT_MIN],'CData',flip(imread('glass.jpg')),'FaceColor','texturemap','FaceAlpha',0.3,'EdgeColor','none');
+            self.sideBarrier = surf([-1.5,-1.5;-0.1,-0.1],[-3.7,-3.7;-3.7,-3.7],[self.BARRIER_HEIGHT_MIN,self.BARRIER_HEIGHT_MIN;self.BARRIER_HEIGHT_MIN,self.BARRIER_HEIGHT_MIN],'CData',flip(imread('glass.jpg')),'FaceColor','texturemap','FaceAlpha',0.3,'EdgeColor','none');
             %PlaceObject('SeatedGirl.ply', [-2.5,-1.2,0])
 
             PlaceObject('hotwaterdispenser.ply', self.WATER_LOCATION); % Set origin at the tap
@@ -115,10 +119,33 @@ classdef Assignment2Starter < handle
             self.robot.model.base = self.robot.model.base * transl(-0.7,-3.3,1.08) * trotx(pi/2); % Moved implementation of robot location from robot class, to Assignment2Starter
             q = self.robot.model.getpos();
             self.robot.model.animate(q);
-           
           
             axis equal
             camlight
+
+            % Set the view in a separate function?
+            %view(40,30)
+            %camzoom(1.5)
+        end
+
+        function LowerBarriers(self)
+            self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'Called']};
+            for i = self.BARRIER_HEIGHT_MAX:-0.01:self.BARRIER_HEIGHT_MIN % Set max and min as constants???? TODO
+                self.frontBarrier.ZData(:,2) = i;
+                self.sideBarrier.ZData(:,2) = i;
+                pause(0.03)
+            end
+            self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'Barrier height is now:', self.BARRIER_HEIGHT_MIN]};
+        end
+
+        function RaiseBarriers(self)
+            self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'Called']};
+            for i = self.BARRIER_HEIGHT_MIN:0.01:self.BARRIER_HEIGHT_MAX % Set max and min as constants???? TODO
+                self.frontBarrier.ZData(:,2) = i;
+                self.sideBarrier.ZData(:,2) = i;
+                pause(0.03)
+            end
+            self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'Barrier height is now:', self.BARRIER_HEIGHT_MAX]};
         end
 
         % DEBUG
@@ -134,6 +161,9 @@ classdef Assignment2Starter < handle
         function MakeTea(self, teaType, milkType, sugarQuantity)
             self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'Called']};
          
+            %% Raise Barriers 
+            self.RaiseBarriers();
+
             %% 1. Pickup cup and place under the water dispenser
             q = self.robot.model.getpos(); % ** Change q to suit 
             GetObject(self.robot.model, self.cup1.currentLocation, q, 50, self.L); % Get the cup TODO change to allow multiple cups 
@@ -207,7 +237,6 @@ classdef Assignment2Starter < handle
             end 
 
             % TODO dispense milk? Press button, milk flows down to cup?
-            % (button location?)
 
             %% 5. Pickup cup and place on appropriate available coaster (Visual servoing part)
             q = self.robot.model.getpos(); % ** Change q to suit 
@@ -218,6 +247,8 @@ classdef Assignment2Starter < handle
             %section while holding a cup find q values needed
             MoveToFindCoaster(self.robot.model, self.cup1, q, 100, self.L);
             q = self.robot.model.getpos(); % ** Change q to suit 
+
+            % Can we put the visual servoing in its own function?
 
             % Create image target (coaster in the centre of the image plane)
             coasterStar = [512; 512];
@@ -371,6 +402,9 @@ classdef Assignment2Starter < handle
             %q = self.robot.model.getpos(); % ** Change q to suit
             %MoveObject(self.robot.model, self.cup1, q, 50, self.L); % Pick up cup and move to coaster
             
+            %% Lower Barriers
+            self.LowerBarriers();
+
             disp('Task 1 - Build model and environment: Complete');
             self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'Complete']};
         end
