@@ -13,6 +13,9 @@ classdef Assignment2Starter < handle
         %Logger
         L = SingleInstance.Logger;
         
+        %Emergency Stop handle
+        h;
+
         % Dobot Magician
         robot;
 
@@ -128,10 +131,10 @@ classdef Assignment2Starter < handle
             %camzoom(1.5)
         end
 
-        function LowerBarriers(self)
+        function LowerBarriers(self) %% should emergency stop stop this ?
             self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'Called']};
             if self.frontBarrier.ZData(1,2) && self.sideBarrier.ZData(1,2) == self.BARRIER_HEIGHT_MAX
-                for i = self.BARRIER_HEIGHT_MAX:-0.01:self.BARRIER_HEIGHT_MIN % Set max and min as constants???? TODO
+                for i = self.BARRIER_HEIGHT_MAX:-0.01:self.BARRIER_HEIGHT_MIN
                     self.frontBarrier.ZData(:,2) = i;
                     self.sideBarrier.ZData(:,2) = i;
                     pause(0.03)
@@ -142,10 +145,10 @@ classdef Assignment2Starter < handle
             end
         end
 
-        function RaiseBarriers(self)
+        function RaiseBarriers(self) %% should emergency stop stop this ?
             self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'Called']};
             if self.frontBarrier.ZData(1,2) && self.sideBarrier.ZData(1,2) == self.BARRIER_HEIGHT_MIN
-                for i = self.BARRIER_HEIGHT_MIN:0.01:self.BARRIER_HEIGHT_MAX % Set max and min as constants???? TODO
+                for i = self.BARRIER_HEIGHT_MIN:0.01:self.BARRIER_HEIGHT_MAX
                     self.frontBarrier.ZData(:,2) = i;
                     self.sideBarrier.ZData(:,2) = i;
                     pause(0.03)
@@ -172,16 +175,25 @@ classdef Assignment2Starter < handle
             %% Raise Barriers 
             self.RaiseBarriers();
 
+            if self.h == true %Check for emergency stop
+                self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'EMERGENCY STOP']};
+                return
+            end
+
             %% 1. Pickup cup and place under the water dispenser
             q = self.robot.model.getpos(); % ** Change q to suit 
-            GetObject(self.robot.model, self.cup1.currentLocation, q, 50, self.L); % Get the cup TODO change to allow multiple cups 
+            GetObject(self.robot.model, self.cup1.currentLocation, q, 50, self.L, self.h); % Get the cup TODO change to allow multiple cups 
             
             self.cup1.goalLocation = transl(self.WATER_LOCATION);
-            RMRC(self.robot.model, self.cup1, self.L);
+            RMRC(self.robot.model, self.cup1, self.L, self.h);
             %q = self.robot.model.getpos(); % ** Change q to suit
             %MoveObject(self.robot.model, self.cup1, q, 50, self.L); % Pick up cup and move to under water dispenser
 
             % TODO dispense water? Press button, water flows down to cup?
+            if self.h == true %Check for emergency stop
+                self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'EMERGENCY STOP']};
+                return
+            end
 
             %% 2. Get appropriate teabag (selected from UI) and place in cup
             switch teaType
@@ -198,24 +210,34 @@ classdef Assignment2Starter < handle
             end
             
             q = self.robot.model.getpos(); % ** Change q to suit 
-            GetObject(self.robot.model, selectedTeaLocation, q, 50, self.L); % Go to the teabag location
+            GetObject(self.robot.model, selectedTeaLocation, q, 50, self.L, self.h); % Go to the teabag location
             
             self.teaBag = MoveableObject('teabag.ply'); % Instantiate tea bag
             self.teaBag.Move(selectedTeaLocation);
 
             self.teaBag.goalLocation = self.cup1.currentLocation;
             q = self.robot.model.getpos(); % ** Change q to suit
-            MoveObject(self.robot.model, self.teaBag, q, 100, self.L); % Pick up teabag and place in cup
+            MoveObject(self.robot.model, self.teaBag, q, 100, self.L, self.h); % Pick up teabag and place in cup
+
+            if self.h == true %Check for emergency stop
+                self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'EMERGENCY STOP']};
+                return
+            end
 
             %% 3. Get sugar (quantity per UI) and place in cup
             if sugarQuantity > 0                                        % Done only if sugar was requested 
                 for i=1:sugarQuantity
                     q = self.robot.model.getpos(); % ** Change q to suit 
-                    GetObject(self.robot.model, self.sugarcube.currentLocation, q, 50, self.L); % Go to the sugar canister
+                    GetObject(self.robot.model, self.sugarcube.currentLocation, q, 50, self.L, self.h); % Go to the sugar canister
                     
                     self.sugarcube.goalLocation = transl(self.cup1.currentLocation);
                     q = self.robot.model.getpos(); % ** Change q to suit
-                    MoveObject(self.robot.model, self.sugarcube, q, 100, self.L); % Pick up sugercube and place in cup
+                    MoveObject(self.robot.model, self.sugarcube, q, 100, self.L, self.h); % Pick up sugercube and place in cup
+
+                    if self.h == true %Check for emergency stop
+                        self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'EMERGENCY STOP']};
+                        return
+                    end
                 end
             end 
 
@@ -236,25 +258,35 @@ classdef Assignment2Starter < handle
 
             if milkType > 0
                 q = self.robot.model.getpos(); % ** Change q to suit 
-                GetObject(self.robot.model, self.cup1.currentLocation, q, 50, self.L); % Get the cup
+                GetObject(self.robot.model, self.cup1.currentLocation, q, 50, self.L, self.h); % Get the cup
                 
                 self.cup1.goalLocation = transl(selectedMilkLocation);
-                RMRC(self.robot.model, self.cup1, self.L);
+                RMRC(self.robot.model, self.cup1, self.L, self.h);
                 %q = self.robot.model.getpos(); % ** Change q to suit
                 %MoveObject(self.robot.model, self.cup1, q, 100, self.L); % Pick up cup and move to under milk dispenser
             end 
 
             % TODO dispense milk? Press button, milk flows down to cup?
 
+            if self.h == true %Check for emergency stop
+                self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'EMERGENCY STOP']};
+                return
+            end
+
             %% 5. Pickup cup and place on appropriate available coaster (Visual servoing part)
             q = self.robot.model.getpos(); % ** Change q to suit 
-            GetObject(self.robot.model, self.cup1.currentLocation, q, 50, self.L); % Get the cup
+            GetObject(self.robot.model, self.cup1.currentLocation, q, 50, self.L, self.h); % Get the cup
 
             q = self.robot.model.getpos(); % ** Change q to suit 
             %TODO Move robot to left side of linear rail facing coaster
             %section while holding a cup find q values needed
-            MoveToFindCoaster(self.robot.model, self.cup1, q, 100, self.L);
+            MoveToFindCoaster(self.robot.model, self.cup1, q, 100, self.L); % TODO Add emergency stop check 
             q = self.robot.model.getpos(); % ** Change q to suit 
+
+            if self.h == true %Check for emergency stop
+                self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'EMERGENCY STOP']};
+                return
+            end
 
             % Can we put the visual servoing in its own function?
 
@@ -406,9 +438,14 @@ classdef Assignment2Starter < handle
             
             
             self.cup1.goalLocation = self.coaster1.currentLocation; % will need to change for multiple cups of tea TODO
-            RMRC(self.robot.model, self.cup1, self.L);
+            RMRC(self.robot.model, self.cup1, self.L, self.h);
             %q = self.robot.model.getpos(); % ** Change q to suit
             %MoveObject(self.robot.model, self.cup1, q, 50, self.L); % Pick up cup and move to coaster
+
+            if self.h == true %Check for emergency stop
+                self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'EMERGENCY STOP']};
+                return
+            end
             
             %% Lower Barriers
             self.LowerBarriers();
@@ -420,7 +457,7 @@ classdef Assignment2Starter < handle
 end
 
 % Moves the end effector of the robot model to a set position
-function GetObject(model, location, q, steps, L)
+function GetObject(model, location, q, steps, L, h)
     L.mlog = {L.DEBUG,mfilename('class'),['GetObject: ','Called']};
 
     q = model.ikcon(location,q); 
@@ -432,13 +469,17 @@ function GetObject(model, location, q, steps, L)
     modelTraj = jtraj(model.getpos,q,steps);
 
     for i = 1:steps
+        if h == true %Check for emergency stop
+            L.mlog = {L.DEBUG,mfilename('class'),['GetObject: ','EMERGENCY STOP']};
+            return
+        end
         model.animate(modelTraj(i,:));
         drawnow()
     end
 end
 
 % Moves the object with the robot end effector to a set location
-function MoveObject(model, object, q, steps, L)
+function MoveObject(model, object, q, steps, L, h)
     L.mlog = {L.DEBUG,mfilename('class'),['MoveObject: ','Called']};
 
     q = model.ikcon(object.goalLocation,q)
@@ -449,6 +490,10 @@ function MoveObject(model, object, q, steps, L)
 
     modelTraj = jtraj(model.getpos,q,steps);
     for i = 1:steps
+        if h == true %Check for emergency stop
+            L.mlog = {L.DEBUG,mfilename('class'),['MoveObject: ','EMERGENCY STOP']};
+            return
+        end
         model.animate(modelTraj(i,:));
         modelTr = model.fkine(modelTraj(i,:));
         object.Move(modelTr);
@@ -457,8 +502,13 @@ function MoveObject(model, object, q, steps, L)
 end
 
 % Resolved Motion Rate Control - Adapted from Lab9Solution_Question1
-function RMRC(model, object, L)
+function RMRC(model, object, L, h)
 L.mlog = {L.DEBUG,mfilename('class'),['RMRC: ','Called']};
+
+if h == true %Check for emergency stop
+    L.mlog = {L.DEBUG,mfilename('class'),['RMRC: ','EMERGENCY STOP']};
+    return
+end
 
 % Set parameters for the simulation
 t = 5;             % Total time (s)
@@ -499,6 +549,10 @@ qMatrix(1,:) = model.ikcon(T,q0);                                           % So
 
 % Track the trajectory with RMRC
 for i = 1:steps-1
+    if h == true %Check for emergency stop
+        L.mlog = {L.DEBUG,mfilename('class'),['RMRC: ','EMERGENCY STOP']};
+        return
+    end
     T = model.fkine(qMatrix(i,:));                                          % Get forward transformation at current joint state
     deltaX = x(:,i+1) - T(1:3,4);                                         	% Get position error from next waypoint
     Rd = rpy2r(theta(1,i+1),theta(2,i+1),theta(3,i+1));                     % Get next RPY angles, convert to rotation matrix
