@@ -203,7 +203,7 @@ classdef Assignment2Starter < handle
             % Create image target (coaster in the centre of the image plane)
             coasterStar = [512; 512];
             %Create coaster as a 3D point
-            coaster = [-0.65;-3.6;1.04];
+            coaster = [-0.65;-3.5;1.04];
             plot_circle(coaster,0.05,'b') %TODO fill colour
 
             %Add the camera (specs sismilar to Lab 8)
@@ -244,7 +244,7 @@ classdef Assignment2Starter < handle
             uv_p = [];
             history = [];
 
-
+            pause
             %% 1.4 Loop
             % loop of the visual servoing
             ksteps = 0;
