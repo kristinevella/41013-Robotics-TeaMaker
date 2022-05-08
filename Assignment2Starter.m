@@ -82,16 +82,16 @@ classdef Assignment2Starter < handle
             PlaceObject('sugarcontainer.ply',[-1.2,-3.5,1]); %% TODO Move (out of reach)
 
             self.cup1 = MoveableObject('cup.ply');
-            self.cup1.Move(transl(-0.3,-2.5,1.04));
+            self.cup1.Move(transl(-0.3,-2.5,1.12));
 
             self.cup2 = MoveableObject('cup.ply');
-            self.cup2.Move(transl(-0.3,-3.1,1.04));
+            self.cup2.Move(transl(-0.3,-3.1,1.12));
 
             self.cup3 = MoveableObject('cup.ply');
-            self.cup3.Move(transl(-0.3,-2.9,1.04));
+            self.cup3.Move(transl(-0.3,-2.9,1.12));
 
             self.cup4 = MoveableObject('cup.ply');
-            self.cup4.Move(transl(-0.3,-2.7,1.04));
+            self.cup4.Move(transl(-0.3,-2.7,1.12));
 
 %             self.coaster1 = MoveableObject('coaster.ply'); %% Coasters are out of reach
 %             self.coaster1.Move(transl(-0.20,-3.6,1.04));
