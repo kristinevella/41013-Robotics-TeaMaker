@@ -281,7 +281,7 @@ classdef Assignment2Starter < handle
             %TODO Move robot to left side of linear rail facing coaster
             %section while holding a cup find q values needed
             MoveToFindCoaster(self.robot.model, self.cup1, q, 100, self.L); % TODO Add emergency stop check 
-            q = self.robot.model.getpos(); % ** Change q to suit 
+            q0 = self.robot.model.getpos(); % ** Change q to suit 
 
             if self.h == true %Check for emergency stop
                 self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'EMERGENCY STOP']};
@@ -293,7 +293,8 @@ classdef Assignment2Starter < handle
             % Create image target (coaster in the centre of the image plane)
             coasterStar = [512; 512];
             %Create coaster as a 3D point
-            coaster = [-0.65;-3.5;1.04];
+            coaster = [-0.67;-3.6;1.08]; %TODO change later, using current position to make sure dobot can actually reach
+            figure(1)
             plot_circle(coaster,0.05,'b') %TODO fill colour
 
             %Add the camera (specs sismilar to Lab 8)
@@ -307,7 +308,12 @@ classdef Assignment2Starter < handle
             %depth of the IBVS
             depth = mean (coaster(1,:));
 
-            Tc0 = self.robot.model.fkine(q);
+            Tc0 = self.robot.model.fkine(q0);
+            Tc0
+            q0
+            q0'
+            self.robot.model.animate(q0');
+            drawnow
 
             %plot camera and points
             cam.T = Tc0;
@@ -370,7 +376,7 @@ classdef Assignment2Starter < handle
                     fprintf('v: %.3f %.3f %.3f %.3f %.3f %.3f\n', v);
             
                     %compute robot's Jacobian and inverse
-                    J2 = self.robot.model.jacobn(q);
+                    J2 = self.robot.model.jacobn(q0);
                     Jinv = pinv(J2);
                     % get joint velocities
                     qp = Jinv*v;
@@ -387,7 +393,10 @@ classdef Assignment2Starter < handle
                      end
             
                     %Update joints 
-                    q = q + (1/fps)*qp;
+                    q = q0 + (1/fps)*qp;
+                    q0
+                    q
+                    q'
                     self.robot.model.animate(q');
             
                     %Get camera location
@@ -418,7 +427,7 @@ classdef Assignment2Starter < handle
                     end
                     
                     %update current joint position
-                    q = q;
+                    q0 = q;
              end %loop finishes
              
             %% 1.5 Plot results
