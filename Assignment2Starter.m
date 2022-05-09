@@ -8,6 +8,7 @@ classdef Assignment2Starter < handle
         LEMON_GINGER_TEA_LOCATION = [-0.4,-1.7,1.2];
         BARRIER_HEIGHT_MIN = 1;
         BARRIER_HEIGHT_MAX = 2.5;
+        CUP_TOTAL = 4;
     end
     properties
         %Logger
@@ -20,21 +21,16 @@ classdef Assignment2Starter < handle
         robot;
 
         % Interactive objects
-        cup1;
-        cup2;
-        cup3;
-        cup4;
+        cups; % Array of cups
+        coasters; % Array of coasters
         teaBag;
         sugarcube;
         spoon;
-        %coaster;
-        coaster1;
-        coaster2;
-        coaster3;
-        coaster4;
         sprayBottle;
         sideBarrier;
         frontBarrier;
+
+        orderCount;
 
     end
     methods
@@ -42,7 +38,8 @@ classdef Assignment2Starter < handle
             close all
 
             self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'Instantiated']};
-
+            
+            self.orderCount = 1;
             SetUpEnvironment(self);
         end
 
@@ -80,33 +77,22 @@ classdef Assignment2Starter < handle
             PlaceObject('teaContainer_LemonAndGinger.ply',self.LEMON_GINGER_TEA_LOCATION);
 
             PlaceObject('sugarcontainer.ply',[-1.2,-3.5,1]); %% TODO Move (out of reach)
+        
+            for i = 1:self.CUP_TOTAL
+                self.cups{i} = MoveableObject('cup.ply');
+                self.coasters{i} = MoveableObject('coaster.ply');
+            end
 
-            self.cup1 = MoveableObject('cup.ply');
-            self.cup1.Move(transl(-0.3,-2.5,1.12));
+            self.cups{1}.Move(transl(-0.3,-2.5,1.12));
+            self.cups{2}.Move(transl(-0.3,-2.7,1.12));
+            self.cups{3}.Move(transl(-0.3,-2.9,1.12));
+            self.cups{4}.Move(transl(-0.3,-3.1,1.12));
 
-            self.cup2 = MoveableObject('cup.ply');
-            self.cup2.Move(transl(-0.3,-3.1,1.12));
-
-            self.cup3 = MoveableObject('cup.ply');
-            self.cup3.Move(transl(-0.3,-2.9,1.12));
-
-            self.cup4 = MoveableObject('cup.ply');
-            self.cup4.Move(transl(-0.3,-2.7,1.12));
-
-%             self.coaster1 = MoveableObject('coaster.ply'); %% Coasters are out of reach
-%             self.coaster1.Move(transl(-0.20,-3.6,1.04));
-% 
-%             self.coaster2 = MoveableObject('coaster.ply');
-%             self.coaster2.Move(transl(-0.45,-3.6,1.04));
-% 
-%             self.coaster3 = MoveableObject('coaster.ply');
-%             self.coaster3.Move(transl(-0.70,-3.6,1.04));
-% 
-%             self.coaster4 = MoveableObject('coaster.ply');
-%             self.coaster4.Move(transl(-0.95,-3.6,1.04));
-          
-
-
+            self.coasters{1}.Move(transl(-0.20,-3.6,1.04));
+            self.coasters{2}.Move(transl(-0.45,-3.6,1.04));
+            self.coasters{3}.Move(transl(-0.70,-3.6,1.04));
+            self.coasters{4}.Move(transl(-0.95,-3.6,1.04));
+       
 %             Tea bag will appear once collected from box?
 %             self.teaBag = MoveableObject('teabag.ply');
 %             self.teaBag.Move(transl(-3,2.6,1.15)); %Starts on the bench for now
@@ -164,13 +150,19 @@ classdef Assignment2Starter < handle
         % each unique trajectory to get the smoothest motion that doesn't
         % exceed limits or hit singularities
         function TestRMRC(self) 
-            RMRC(self.robot.model, self.cup1, transl(self.WATER_LOCATION), self.L);
+            RMRC(self.robot.model, self.cups{1}, transl(self.WATER_LOCATION), self.L);
         end
         % DEBUG END
         
         % Make tea using the robot
         function MakeTea(self, teaType, milkType, sugarQuantity)
             self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'Called']};
+
+            if self.orderCount > 4
+                self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'No empty cups remaining. Cannot make more tea.']};
+                disp('No empty cups remaining. Cannot make more tea, please reset.');
+                return;
+            end
          
             %% Raise Barriers 
             self.RaiseBarriers();
@@ -182,12 +174,12 @@ classdef Assignment2Starter < handle
 
             %% 1. Pickup cup and place under the water dispenser
             q = self.robot.model.getpos(); % ** Change q to suit 
-            GetObject(self.robot.model, self.cup1.currentLocation, q, 50, self.L, self.h); % Get the cup TODO change to allow multiple cups 
+            GetObject(self.robot.model, self.cups{self.orderCount}.currentLocation, q, 50, self.L, self.h); % Get a cup
             
-            self.cup1.goalLocation = transl(self.WATER_LOCATION);
-            RMRC(self.robot.model, self.cup1, self.L, self.h);
+            self.cups{self.orderCount}.goalLocation = transl(self.WATER_LOCATION);
+            RMRC(self.robot.model, self.cups{self.orderCount}, self.L, self.h);
             %q = self.robot.model.getpos(); % ** Change q to suit
-            %MoveObject(self.robot.model, self.cup1, q, 50, self.L); % Pick up cup and move to under water dispenser
+            %MoveObject(self.robot.model, self.cups{self.orderCount}, q, 50, self.L); % Pick up cup and move to under water dispenser
 
             % TODO dispense water? Press button, water flows down to cup?
             if self.h == true %Check for emergency stop
@@ -215,7 +207,7 @@ classdef Assignment2Starter < handle
             self.teaBag = MoveableObject('teabag.ply'); % Instantiate tea bag
             self.teaBag.Move(selectedTeaLocation);
 
-            self.teaBag.goalLocation = self.cup1.currentLocation;
+            self.teaBag.goalLocation = self.cups{self.orderCount}.currentLocation;
             q = self.robot.model.getpos(); % ** Change q to suit
             MoveObject(self.robot.model, self.teaBag, q, 100, self.L, self.h); % Pick up teabag and place in cup
 
@@ -230,7 +222,7 @@ classdef Assignment2Starter < handle
                     q = self.robot.model.getpos(); % ** Change q to suit 
                     GetObject(self.robot.model, self.sugarcube.currentLocation, q, 50, self.L, self.h); % Go to the sugar canister
                     
-                    self.sugarcube.goalLocation = transl(self.cup1.currentLocation);
+                    self.sugarcube.goalLocation = transl(self.cups{self.orderCount}.currentLocation);
                     q = self.robot.model.getpos(); % ** Change q to suit
                     MoveObject(self.robot.model, self.sugarcube, q, 100, self.L, self.h); % Pick up sugercube and place in cup
 
@@ -258,12 +250,12 @@ classdef Assignment2Starter < handle
 
             if milkType > 0
                 q = self.robot.model.getpos(); % ** Change q to suit 
-                GetObject(self.robot.model, self.cup1.currentLocation, q, 50, self.L, self.h); % Get the cup
+                GetObject(self.robot.model, self.cups{self.orderCount}.currentLocation, q, 50, self.L, self.h); % Get the cup
                 
-                self.cup1.goalLocation = transl(selectedMilkLocation);
-                RMRC(self.robot.model, self.cup1, self.L, self.h);
+                self.cups{self.orderCount}.goalLocation = transl(selectedMilkLocation);
+                RMRC(self.robot.model, self.cups{self.orderCount}, self.L, self.h);
                 %q = self.robot.model.getpos(); % ** Change q to suit
-                %MoveObject(self.robot.model, self.cup1, q, 100, self.L); % Pick up cup and move to under milk dispenser
+                %MoveObject(self.robot.model, self.cups{self.orderCount}, q, 100, self.L); % Pick up cup and move to under milk dispenser
             end 
 
             % TODO dispense milk? Press button, milk flows down to cup?
@@ -275,12 +267,12 @@ classdef Assignment2Starter < handle
 
             %% 5. Pickup cup and place on appropriate available coaster (Visual servoing part)
             q = self.robot.model.getpos(); % ** Change q to suit 
-            GetObject(self.robot.model, self.cup1.currentLocation, q, 50, self.L, self.h); % Get the cup
+            GetObject(self.robot.model, self.cups{self.orderCount}.currentLocation, q, 50, self.L, self.h); % Get the cup
 
             q = self.robot.model.getpos(); % ** Change q to suit 
             %TODO Move robot to left side of linear rail facing coaster
             %section while holding a cup find q values needed
-            MoveToFindCoaster(self.robot.model, self.cup1, q, 100, self.L); % TODO Add emergency stop check 
+            MoveToFindCoaster(self.robot.model, self.cups{self.orderCount}, q, 100, self.L); % TODO Add emergency stop check 
             q0 = self.robot.model.getpos(); % ** Change q to suit 
 
             if self.h == true %Check for emergency stop
@@ -446,10 +438,10 @@ classdef Assignment2Starter < handle
             %TODO continue with visual servoing
             
             
-            self.cup1.goalLocation = self.coaster1.currentLocation; % will need to change for multiple cups of tea TODO
-            RMRC(self.robot.model, self.cup1, self.L, self.h);
+            self.cups{self.orderCount}.goalLocation = self.coasters{self.orderCount}.currentLocation;
+            RMRC(self.robot.model, self.cups{self.orderCount}, self.L, self.h);
             %q = self.robot.model.getpos(); % ** Change q to suit
-            %MoveObject(self.robot.model, self.cup1, q, 50, self.L); % Pick up cup and move to coaster
+            %MoveObject(self.robot.model, self.cups{self.orderCount}, q, 50, self.L); % Pick up cup and move to coaster
 
             if self.h == true %Check for emergency stop
                 self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'EMERGENCY STOP']};
@@ -458,6 +450,8 @@ classdef Assignment2Starter < handle
             
             %% Lower Barriers
             self.LowerBarriers();
+
+            self.orderCount = self.orderCount + 1;
 
             disp('Task 1 - Build model and environment: Complete');
             self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'Complete']};
@@ -583,6 +577,10 @@ for i = 1:steps-1
     invJ = inv(J'*J + lambda *eye(6))*J';                                   % DLS Inverse
     qdot(i,:) = (invJ*xdot)';                                               % Solve the RMRC equation (you may need to transpose the vector)
     for j = 1:6                                                             % Loop through joints 1 to 6
+        if h == true %Check for emergency stop
+            L.mlog = {L.DEBUG,mfilename('class'),['RMRC: ','EMERGENCY STOP']};
+            return
+        end
         if qMatrix(i,j) + deltaT*qdot(i,j) < model.qlim(j,1)                % If next joint angle is lower than joint limit...
             qdot(i,j) = 0; % Stop the motor
             L.mlog = {L.DEBUG,mfilename('class'),['RMRC: Next joint angle is lower than joint limit: ',num2str(qMatrix(i,j) + deltaT*qdot(i,j)),' < ',num2str(model.qlim(j,1)),' - Motor stopped!']};
@@ -597,9 +595,10 @@ for i = 1:steps-1
 end
 
 % DEBUG
-plot3(x(1,:),x(2,:),x(3,:),'k.','LineWidth',1);
+plot3(x(1,:),x(2,:),x(3,:),'r.','LineWidth',1);
 % DEBUG END
 
+%% Do I need this for loop or can I animate in the other one? Will it make the processing time less obvious?
 for i = 1:steps
     model.animate(qMatrix(i,:));
     modelTr = model.fkine(qMatrix(i,:));
