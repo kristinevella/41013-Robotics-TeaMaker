@@ -43,6 +43,27 @@ classdef Assignment2Starter < handle
             SetUpEnvironment(self);
         end
 
+        % DEBUG
+        function TestFunction(self)
+            clf
+            hold on
+            axis equal
+            
+            self.InitialiseRobot();
+
+            %RMRC(self.robot.model, self.cups{1}, transl(self.WATER_LOCATION), self.L);
+            AvoidCollisions(self.robot, self.L, self.h);
+        end
+        % DEBUG END
+
+        function InitialiseRobot(self)
+            self.L.mlog = {self.L.DEBUG,mfilename('class'),['InitialiseRobot: ','Called']};
+            self.robot = Dobot(false);
+            self.robot.model.base = self.robot.model.base * transl(-0.7,-3.3,1.08) * trotx(pi/2); % Moved implementation of robot location from robot class, to Assignment2Starter
+            q = self.robot.model.getpos();
+            self.robot.model.animate(q);
+        end
+
         function SetUpEnvironment(self)
             self.L.mlog = {self.L.DEBUG,mfilename('class'),['SetUpEnvironment: ','Called']};
             disp('Initialising the environment...')
@@ -100,14 +121,7 @@ classdef Assignment2Starter < handle
             self.sugarcube = MoveableObject('sugarcube.ply'); 
             self.sugarcube.Move(transl(-1.2,-3.5,1.05));
 
-            self.sprayBottle = MoveableObject('sprayBottle.ply'); % spray bottle will be moved around workspace and dobot must avoid collision
-            self.sprayBottle.Move(transl(-0.2,-3.3,1));
-
-            % Initialise robot
-            self.robot = Dobot(false);
-            self.robot.model.base = self.robot.model.base * transl(-0.7,-3.3,1.08) * trotx(pi/2); % Moved implementation of robot location from robot class, to Assignment2Starter
-            q = self.robot.model.getpos();
-            self.robot.model.animate(q);
+            InitialiseRobot();
           
             axis equal
             camlight
@@ -115,6 +129,13 @@ classdef Assignment2Starter < handle
             % Set the view in a separate function?
             %view(40,30)
             %camzoom(1.5)
+        end
+
+        function PlaceColidableItem(self, location)
+            if self.sprayBottle == null
+                self.sprayBottle = MoveableObject('sprayBottle.ply'); % Initialise spray bottle
+            end
+            self.sprayBottle.Move(transl(location)); % [-0.2,-3.3,1]
         end
 
         function LowerBarriers(self) %% should emergency stop stop this ?
@@ -144,15 +165,6 @@ classdef Assignment2Starter < handle
                 self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'Barrier is already is raised position']};
             end
         end
-
-        % DEBUG
-        % TODO: Need to change initial parameters in RMRC each time depending on
-        % each unique trajectory to get the smoothest motion that doesn't
-        % exceed limits or hit singularities
-        function TestRMRC(self) 
-            RMRC(self.robot.model, self.cups{1}, transl(self.WATER_LOCATION), self.L);
-        end
-        % DEBUG END
         
         % Make tea using the robot
         function MakeTea(self, teaType, milkType, sugarQuantity)
@@ -504,145 +516,224 @@ function MoveObject(model, object, q, steps, L, h)
     end
 end
 
+% Collision Avoidance - derrived from Lab6Solution
+function AvoidCollisions(robot, L, h)
+    L.mlog = {L.DEBUG,mfilename('class'),['AvoidCollisions: ','Called']};
+
+    if h == true %Check for emergency stop
+        L.mlog = {L.DEBUG,mfilename('class'),['AvoidCollisions: ','EMERGENCY STOP']};
+        return
+    end
+
+    alpha(0.1); %Remove TODO
+
+    % Create cube - For initial testing only - TODO remove
+    % One side of the cube
+    [Y,Z] = meshgrid(-0.75:0.05:0.75,-0.75:0.05:0.75);
+    sizeMat = size(Y);
+    X = repmat(0.75,sizeMat(1),sizeMat(2));
+    oneSideOfCube_h = surf(X,Y,Z);
+    
+    % Combine one surface as a point cloud
+    cubePoints = [X(:),Y(:),Z(:)];
+    
+    % Make a cube by rotating the single side by 0,90,180,270, and around y to make the top and bottom faces
+    cubePoints = [ cubePoints ...
+                 ; cubePoints * rotz(pi/2)...
+                 ; cubePoints * rotz(pi) ...
+                 ; cubePoints * rotz(3*pi/2) ...
+                 ; cubePoints * roty(pi/2) ...
+                 ; cubePoints * roty(-pi/2)];         
+             
+    % Plot the cube's point cloud         
+    cubeAtOigin_h = plot3(cubePoints(:,1),cubePoints(:,2),cubePoints(:,3),'r.');
+    cubePoints = cubePoints + repmat([-2,-3,1],size(cubePoints,1),1);
+    cube_h = plot3(cubePoints(:,1),cubePoints(:,2),cubePoints(:,3),'b.');
+
+    % New values for the ellipsoid (need to check for different configurations) TODO
+    centerPoint = [0,0,0];
+    radii{1} = [0.1,0.1,0.1];
+    radii{2} = [0.1,0.15,0.1];
+    radii{3} = [0.1,0.15,0.1];
+    radii{4} = [0.1,0.05,0.07];
+    radii{5} = [0.1,0.08,0.05];
+    radii{6} = [0.05,0.09,0.1];
+    radii{7} = [0.03,0.03,0.03];  
+
+    % DEBUG - for visualising only
+    for i = 1:robot.model.n+1                                               % robot links + base
+        [X,Y,Z] = ellipsoid(centerPoint(1), centerPoint(2), centerPoint(3), radii{i}(1), radii{i}(2), radii{i}(3));
+        robot.model.points{i} = [X(:),Y(:),Z(:)];
+        warning off
+        robot.model.faces{i} = delaunay(robot.model.points{i});    
+        warning on;
+
+        robot.model.plot3d([0,0,pi/4,pi/4,0,0],'noarrow','workspace',robot.workspace); %for DEBUG
+    end
+
+    robot.model.plot3d([0,0,pi/4,pi/4,0,0],'noarrow','workspace',robot.workspace); %TODO Change workspace??
+    % DEBUG end
+    
+    % All links
+    q = robot.model.getpos();
+    tr = zeros(4,4,robot.model.n+1);
+    tr(:,:,1) = robot.model.base;
+    L = robot.model.links;
+    for i = 1 : robot.model.n
+        tr(:,:,i+1) = tr(:,:,i) * trotz(q(i)) * transl(0,0,L(i).d) * transl(L(i).a,0,0) * trotx(L(i).alpha); %%% What is this doing TODO
+    end
+    
+    % Go through each ellipsoid
+    for i = 1: size(tr,3)
+        cubePointsAndOnes = [inv(tr(:,:,i)) * [cubePoints,ones(size(cubePoints,1),1)]']';
+        updatedCubePoints = cubePointsAndOnes(:,1:3);
+        algebraicDist = GetAlgebraicDist(updatedCubePoints, centerPoint, radii{i});
+        pointsInside = find(algebraicDist < 1);
+        disp(['2.10: There are ', num2str(size(pointsInside,1)),' points inside the ',num2str(i),'th ellipsoid']);
+    end
+end 
+
+% TODO: Need to change initial parameters in RMRC each time depending on
+% each unique trajectory to get the smoothest motion that doesn't
+% exceed limits or hit singularities
 % Resolved Motion Rate Control - Adapted from Lab9Solution_Question1
 function RMRC(model, object, L, h)
-L.mlog = {L.DEBUG,mfilename('class'),['RMRC: ','Called']};
-
-if h == true %Check for emergency stop
-    L.mlog = {L.DEBUG,mfilename('class'),['RMRC: ','EMERGENCY STOP']};
-    return
-end
-
-% Set parameters for the simulation
-t = 5;             % Total time (s)
-deltaT = 0.02;      % Control frequency
-steps = t/deltaT;   % No. of steps for simulation
-delta = 2*pi/steps; % Small angle change
-epsilon = 0.1;      % Threshold value for manipulability/Damped Least Squares
-W = diag([1 1 1 0.1 0.1 0.1]);    % Weighting matrix for the velocity vector (More emphasis on linear than angular here)
-
-% Allocate array data
-m = zeros(steps,1);             % Array for Measure of Manipulability
-qMatrix = zeros(steps,6);       % Array for joint anglesR
-qdot = zeros(steps,6);          % Array for joint velocities
-theta = zeros(3,steps);         % Array for roll-pitch-yaw angles
-x = zeros(3,steps);             % Array for x-y-z trajectory
-positionError = zeros(3,steps); % For plotting trajectory error
-angleError = zeros(3,steps);    % For plotting trajectory error
-
-q = model.getpos();
-T = model.fkine(q);
-
-% Set up trajectory, initial pose
-s = lspb(0,1,steps);                % Trapezoidal trajectory scalar
-for i=1:steps
-    x(1,i) = (1-s(i))*T(1,4) + s(i)*object.goalLocation(1,4); % Points in x
-    x(2,i) = (1-s(i))*T(2,4) + s(i)*object.goalLocation(2,4); % Points in y
-    x(3,i) = (1-s(i))*T(3,4) + s(i)*object.goalLocation(3,4); % Points in z
-    %x(3,i) = 0.5 + 0.2*sin(i*delta); % Points in z
-    % Maintain downwards facing
-    theta(1,i) = pi;                 % Roll angle 
-    theta(2,i) = 0;                  % Pitch angle
-    theta(3,i) = pi;                 % Yaw angle
-end
- 
-T = [rpy2r(theta(1,1),theta(2,1),theta(3,1)) x(:,1);zeros(1,3) 1];          % Create transformation of first point and angle
-q0 = zeros(1,6);                                                            % Initial guess for joint angles
-qMatrix(1,:) = model.ikcon(T,q0);                                           % Solve joint angles to achieve first waypoint
-
-% Track the trajectory with RMRC
-for i = 1:steps-1
+    L.mlog = {L.DEBUG,mfilename('class'),['RMRC: ','Called']};
+    
     if h == true %Check for emergency stop
         L.mlog = {L.DEBUG,mfilename('class'),['RMRC: ','EMERGENCY STOP']};
         return
     end
-    T = model.fkine(qMatrix(i,:));                                          % Get forward transformation at current joint state
-    deltaX = x(:,i+1) - T(1:3,4);                                         	% Get position error from next waypoint
-    Rd = rpy2r(theta(1,i+1),theta(2,i+1),theta(3,i+1));                     % Get next RPY angles, convert to rotation matrix
-    Ra = T(1:3,1:3);                                                        % Current end-effector rotation matrix
-    Rdot = (1/deltaT)*(Rd - Ra);                                            % Calculate rotation matrix error (requires small value for deltaT to work)
-    S = Rdot*Ra';                                                           % Skew symmetric! (TODO - Check week 6??????????)
-    linear_velocity = (1/deltaT)*deltaX;
-    angular_velocity = [S(3,2);S(1,3);S(2,1)];                              % Check the structure of Skew Symmetric matrix!!
-    deltaTheta = tr2rpy(Rd*Ra');                                            % Convert rotation matrix to RPY angles
-    xdot = W*[linear_velocity;angular_velocity];                          	% Calculate end-effector velocity to reach next waypoint.
-    J = model.jacob0(qMatrix(i,:));                                         % Get Jacobian at current joint state (Jacobian with respect to the base, alternatively to the end effector)
-    m(i) = sqrt(det(J*J'));
-    lambdaMax = 5E-2;
-    if m(i) < epsilon  % If manipulability is less than given threshold
-        lambda = (1 - m(i)/epsilon)*lambdaMax;
-    else
-        lambda = 0;
+    
+    % Set parameters for the simulation
+    t = 5;             % Total time (s)
+    deltaT = 0.02;      % Control frequency
+    steps = t/deltaT;   % No. of steps for simulation
+    delta = 2*pi/steps; % Small angle change
+    epsilon = 0.1;      % Threshold value for manipulability/Damped Least Squares
+    W = diag([1 1 1 0.1 0.1 0.1]);    % Weighting matrix for the velocity vector (More emphasis on linear than angular here)
+    
+    % Allocate array data
+    m = zeros(steps,1);             % Array for Measure of Manipulability
+    qMatrix = zeros(steps,6);       % Array for joint anglesR
+    qdot = zeros(steps,6);          % Array for joint velocities
+    theta = zeros(3,steps);         % Array for roll-pitch-yaw angles
+    x = zeros(3,steps);             % Array for x-y-z trajectory
+    positionError = zeros(3,steps); % For plotting trajectory error
+    angleError = zeros(3,steps);    % For plotting trajectory error
+    
+    q = model.getpos();
+    T = model.fkine(q);
+    
+    % Set up trajectory, initial pose
+    s = lspb(0,1,steps);                % Trapezoidal trajectory scalar
+    for i=1:steps
+        x(1,i) = (1-s(i))*T(1,4) + s(i)*object.goalLocation(1,4); % Points in x
+        x(2,i) = (1-s(i))*T(2,4) + s(i)*object.goalLocation(2,4); % Points in y
+        x(3,i) = (1-s(i))*T(3,4) + s(i)*object.goalLocation(3,4); % Points in z
+        % Maintain downwards facing
+        theta(1,i) = pi;                 % Roll angle 
+        theta(2,i) = 0;                  % Pitch angle
+        theta(3,i) = pi;                 % Yaw angle
     end
-    invJ = inv(J'*J + lambda *eye(6))*J';                                   % DLS Inverse
-    qdot(i,:) = (invJ*xdot)';                                               % Solve the RMRC equation (you may need to transpose the vector)
-    for j = 1:6                                                             % Loop through joints 1 to 6
+     
+    T = [rpy2r(theta(1,1),theta(2,1),theta(3,1)) x(:,1);zeros(1,3) 1];          % Create transformation of first point and angle
+    q0 = zeros(1,6);                                                            % Initial guess for joint angles
+    qMatrix(1,:) = model.ikcon(T,q0);                                           % Solve joint angles to achieve first waypoint
+    
+    % Track the trajectory with RMRC
+    for i = 1:steps-1
         if h == true %Check for emergency stop
             L.mlog = {L.DEBUG,mfilename('class'),['RMRC: ','EMERGENCY STOP']};
             return
         end
-        if qMatrix(i,j) + deltaT*qdot(i,j) < model.qlim(j,1)                % If next joint angle is lower than joint limit...
-            qdot(i,j) = 0; % Stop the motor
-            L.mlog = {L.DEBUG,mfilename('class'),['RMRC: Next joint angle is lower than joint limit: ',num2str(qMatrix(i,j) + deltaT*qdot(i,j)),' < ',num2str(model.qlim(j,1)),' - Motor stopped!']};
-        elseif qMatrix(i,j) + deltaT*qdot(i,j) > model.qlim(j,2)                 % If next joint angle is greater than joint limit ...
-            qdot(i,j) = 0; % Stop the motor
-            L.mlog = {L.DEBUG,mfilename('class'),['RMRC: Next joint angle is greater than joint limit: ',num2str(qMatrix(i,j) + deltaT*qdot(i,j)),' > ',num2str(model.qlim(j,2)),' - Motor stopped!']};
+        T = model.fkine(qMatrix(i,:));                                          % Get forward transformation at current joint state
+        deltaX = x(:,i+1) - T(1:3,4);                                         	% Get position error from next waypoint
+        Rd = rpy2r(theta(1,i+1),theta(2,i+1),theta(3,i+1));                     % Get next RPY angles, convert to rotation matrix
+        Ra = T(1:3,1:3);                                                        % Current end-effector rotation matrix
+        Rdot = (1/deltaT)*(Rd - Ra);                                            % Calculate rotation matrix error (requires small value for deltaT to work)
+        S = Rdot*Ra';                                                           % Skew symmetric! (TODO - Check week 6??????????)
+        linear_velocity = (1/deltaT)*deltaX;
+        angular_velocity = [S(3,2);S(1,3);S(2,1)];                              % Check the structure of Skew Symmetric matrix!!
+        deltaTheta = tr2rpy(Rd*Ra');                                            % Convert rotation matrix to RPY angles
+        xdot = W*[linear_velocity;angular_velocity];                          	% Calculate end-effector velocity to reach next waypoint.
+        J = model.jacob0(qMatrix(i,:));                                         % Get Jacobian at current joint state (Jacobian with respect to the base, alternatively to the end effector)
+        m(i) = sqrt(det(J*J'));
+        lambdaMax = 5E-2;
+        if m(i) < epsilon  % If manipulability is less than given threshold
+            lambda = (1 - m(i)/epsilon)*lambdaMax;
+        else
+            lambda = 0;
         end
+        invJ = inv(J'*J + lambda *eye(6))*J';                                   % DLS Inverse
+        qdot(i,:) = (invJ*xdot)';                                               % Solve the RMRC equation (you may need to transpose the vector)
+        for j = 1:6                                                             % Loop through joints 1 to 6
+            if h == true %Check for emergency stop
+                L.mlog = {L.DEBUG,mfilename('class'),['RMRC: ','EMERGENCY STOP']};
+                return
+            end
+            if qMatrix(i,j) + deltaT*qdot(i,j) < model.qlim(j,1)                % If next joint angle is lower than joint limit...
+                qdot(i,j) = 0; % Stop the motor
+                L.mlog = {L.DEBUG,mfilename('class'),['RMRC: Next joint angle is lower than joint limit: ',num2str(qMatrix(i,j) + deltaT*qdot(i,j)),' < ',num2str(model.qlim(j,1)),' - Motor stopped!']};
+            elseif qMatrix(i,j) + deltaT*qdot(i,j) > model.qlim(j,2)                 % If next joint angle is greater than joint limit ...
+                qdot(i,j) = 0; % Stop the motor
+                L.mlog = {L.DEBUG,mfilename('class'),['RMRC: Next joint angle is greater than joint limit: ',num2str(qMatrix(i,j) + deltaT*qdot(i,j)),' > ',num2str(model.qlim(j,2)),' - Motor stopped!']};
+            end
+        end
+        qMatrix(i+1,:) = qMatrix(i,:) + deltaT*qdot(i,:);                       % Update next joint state based on joint velocities
+        positionError(:,i) = x(:,i+1) - T(1:3,4);                               % For plotting
+        angleError(:,i) = deltaTheta;                                           % For plotting
     end
-    qMatrix(i+1,:) = qMatrix(i,:) + deltaT*qdot(i,:);                       % Update next joint state based on joint velocities
-    positionError(:,i) = x(:,i+1) - T(1:3,4);                               % For plotting
-    angleError(:,i) = deltaTheta;                                           % For plotting
-end
-
-% DEBUG
-plot3(x(1,:),x(2,:),x(3,:),'r.','LineWidth',1);
-% DEBUG END
-
-%% Do I need this for loop or can I animate in the other one? Will it make the processing time less obvious?
-for i = 1:steps
-    model.animate(qMatrix(i,:));
-    modelTr = model.fkine(qMatrix(i,:));
-    object.Move(modelTr);
-    drawnow()
-end
-
-% DEBUG
-for i = 1:6
-    figure(2)
-    subplot(3,2,i)
-    plot(qMatrix(:,i),'k','LineWidth',1)
-    title(['Joint ', num2str(i)])
-    ylabel('Angle (rad)')
-    refline(0,model.qlim(i,1));
-    refline(0,model.qlim(i,2));
     
-    figure(3)
-    subplot(3,2,i)
-    plot(qdot(:,i),'k','LineWidth',1)
-    title(['Joint ',num2str(i)]);
-    ylabel('Velocity (rad/s)')
+    % DEBUG
+    plot3(x(1,:),x(2,:),x(3,:),'r.','LineWidth',1);
+    % DEBUG END
+    
+    %% Do I need this for loop or can I animate in the other one? Will it make the processing time less obvious?
+    for i = 1:steps
+        model.animate(qMatrix(i,:));
+        modelTr = model.fkine(qMatrix(i,:));
+        object.Move(modelTr);
+        drawnow()
+    end
+    
+    % DEBUG
+    for i = 1:6
+        figure(2)
+        subplot(3,2,i)
+        plot(qMatrix(:,i),'k','LineWidth',1)
+        title(['Joint ', num2str(i)])
+        ylabel('Angle (rad)')
+        refline(0,model.qlim(i,1));
+        refline(0,model.qlim(i,2));
+        
+        figure(3)
+        subplot(3,2,i)
+        plot(qdot(:,i),'k','LineWidth',1)
+        title(['Joint ',num2str(i)]);
+        ylabel('Velocity (rad/s)')
+        refline(0,0)
+    end
+    
+    figure(4)
+    subplot(2,1,1)
+    plot(positionError'*1000,'LineWidth',1)
     refline(0,0)
-end
-
-figure(4)
-subplot(2,1,1)
-plot(positionError'*1000,'LineWidth',1)
-refline(0,0)
-xlabel('Step')
-ylabel('Position Error (mm)')
-legend('X-Axis','Y-Axis','Z-Axis')
-
-subplot(2,1,2)
-plot(angleError','LineWidth',1)
-refline(0,0)
-xlabel('Step')
-ylabel('Angle Error (rad)')
-legend('Roll','Pitch','Yaw')
-figure(5)
-plot(m,'k','LineWidth',1)
-refline(0,epsilon)
-title('Manipulability')
-% DEBUG END
+    xlabel('Step')
+    ylabel('Position Error (mm)')
+    legend('X-Axis','Y-Axis','Z-Axis')
+    
+    subplot(2,1,2)
+    plot(angleError','LineWidth',1)
+    refline(0,0)
+    xlabel('Step')
+    ylabel('Angle Error (rad)')
+    legend('Roll','Pitch','Yaw')
+    figure(5)
+    plot(m,'k','LineWidth',1)
+    refline(0,epsilon)
+    title('Manipulability')
+    % DEBUG END
 
 end 
 
@@ -664,121 +755,138 @@ end
 %% Functions for plotting (From Lab 8 Solution)
 
  function plot_p(history,uv_star,camera)
-            %VisualServo.plot_p Plot feature trajectory
-            %
-            % VS.plot_p() plots the feature values versus time.
-            %
-            % See also VS.plot_vel, VS.plot_error, VS.plot_camera,
-            % VS.plot_jcond, VS.plot_z, VS.plot_error, VS.plot_all.
-            
-            if isempty(history)
-                return
-            end
-            figure();
-            clf
-            hold on
-            % image plane trajectory
-            uv = [history.uv]';
-            % result is a vector with row per time step, each row is u1, v1, u2, v2 ...
-            for i=1:numcols(uv)/2
-                p = uv(:,i*2-1:i*2);    % get data for i'th point
-                plot(p(:,1), p(:,2))
-            end
-            plot_poly( reshape(uv(1,:), 2, []), 'o--');
-            uv(end,:)
-            if ~isempty(uv_star)
-                plot_poly(uv_star, '*:')
-            else
-                plot_poly( reshape(uv(end,:), 2, []), 'rd--');
-            end
-            axis([0 camera.npix(1) 0 camera.npix(2)]);
-            set(gca, 'Ydir' , 'reverse');
-            grid
-            xlabel('u (pixels)');
-            ylabel('v (pixels)');
-            hold off
-        end
+    %VisualServo.plot_p Plot feature trajectory
+    %
+    % VS.plot_p() plots the feature values versus time.
+    %
+    % See also VS.plot_vel, VS.plot_error, VS.plot_camera,
+    % VS.plot_jcond, VS.plot_z, VS.plot_error, VS.plot_all.
+    
+    if isempty(history)
+        return
+    end
+    figure();
+    clf
+    hold on
+    % image plane trajectory
+    uv = [history.uv]';
+    % result is a vector with row per time step, each row is u1, v1, u2, v2 ...
+    for i=1:numcols(uv)/2
+        p = uv(:,i*2-1:i*2);    % get data for i'th point
+        plot(p(:,1), p(:,2))
+    end
+    plot_poly( reshape(uv(1,:), 2, []), 'o--');
+    uv(end,:)
+    if ~isempty(uv_star)
+        plot_poly(uv_star, '*:')
+    else
+        plot_poly( reshape(uv(end,:), 2, []), 'rd--');
+    end
+    axis([0 camera.npix(1) 0 camera.npix(2)]);
+    set(gca, 'Ydir' , 'reverse');
+    grid
+    xlabel('u (pixels)');
+    ylabel('v (pixels)');
+    hold off
+end
 
-       function plot_vel(history)
-            %VisualServo.plot_vel Plot camera trajectory
-            %
-            % VS.plot_vel() plots the camera velocity versus time.
-            %
-            % See also VS.plot_p, VS.plot_error, VS.plot_camera,
-            % VS.plot_jcond, VS.plot_z, VS.plot_error, VS.plot_all.
-            if isempty(history)
-                return
-            end
-            clf
-            vel = [history.vel]';
-            plot(vel(:,1:3), '-')
-            hold on
-            plot(vel(:,4:6), '--')
-            hold off
-            ylabel('Cartesian velocity')
-            grid
-            xlabel('Time')
-            xaxis(length(history));
-            legend('v_x', 'v_y', 'v_z', '\omega_x', '\omega_y', '\omega_z')
-        end
+function plot_vel(history)
+    %VisualServo.plot_vel Plot camera trajectory
+    %
+    % VS.plot_vel() plots the camera velocity versus time.
+    %
+    % See also VS.plot_p, VS.plot_error, VS.plot_camera,
+    % VS.plot_jcond, VS.plot_z, VS.plot_error, VS.plot_all.
+    if isempty(history)
+        return
+    end
+    clf
+    vel = [history.vel]';
+    plot(vel(:,1:3), '-')
+    hold on
+    plot(vel(:,4:6), '--')
+    hold off
+    ylabel('Cartesian velocity')
+    grid
+    xlabel('Time')
+    xaxis(length(history));
+    legend('v_x', 'v_y', 'v_z', '\omega_x', '\omega_y', '\omega_z')
+end
 
-        function plot_camera(history)
-            %VisualServo.plot_camera Plot camera trajectory
-            %
-            % VS.plot_camera() plots the camera pose versus time.
-            %
-            % See also VS.plot_p, VS.plot_vel, VS.plot_error,
-            % VS.plot_jcond, VS.plot_z, VS.plot_error, VS.plot_all.
+function plot_camera(history)
+    %VisualServo.plot_camera Plot camera trajectory
+    %
+    % VS.plot_camera() plots the camera pose versus time.
+    %
+    % See also VS.plot_p, VS.plot_vel, VS.plot_error,
+    % VS.plot_jcond, VS.plot_z, VS.plot_error, VS.plot_all.
 
-            if isempty(history)
-                return
-            end
-            clf
-            % Cartesian camera position vs time
-            T = reshape([history.Tcam], 4, 4, []);
-            subplot(211)
-            plot(transl(T));
-            ylabel('camera position')
-            grid
-            subplot(212)
-            plot(tr2rpy(T))
-            ylabel('camera orientation')
-            grid
-            xlabel('Time')
-            xaxis(length(history));
-            legend('R', 'P', 'Y');
-            subplot(211)
-            legend('X', 'Y', 'Z');
-        end
+    if isempty(history)
+        return
+    end
+    clf
+    % Cartesian camera position vs time
+    T = reshape([history.Tcam], 4, 4, []);
+    subplot(211)
+    plot(transl(T));
+    ylabel('camera position')
+    grid
+    subplot(212)
+    plot(tr2rpy(T))
+    ylabel('camera orientation')
+    grid
+    xlabel('Time')
+    xaxis(length(history));
+    legend('R', 'P', 'Y');
+    subplot(211)
+    legend('X', 'Y', 'Z');
+end
 
-        function plot_robjointvel(history)
-          
-            if isempty(history)
-                return
-            end
-            clf
-            vel = [history.qp]';
-            plot(vel(:,1:6), '-')
-            hold on
-            ylabel('Joint velocity')
-            grid
-            xlabel('Time')
-            xaxis(length(history));
-            legend('\omega_1', '\omega_2', '\omega_3', '\omega_4', '\omega_5', '\omega_6')
-        end
+function plot_robjointvel(history)
+  
+    if isempty(history)
+        return
+    end
+    clf
+    vel = [history.qp]';
+    plot(vel(:,1:6), '-')
+    hold on
+    ylabel('Joint velocity')
+    grid
+    xlabel('Time')
+    xaxis(length(history));
+    legend('\omega_1', '\omega_2', '\omega_3', '\omega_4', '\omega_5', '\omega_6')
+end
 
- function plot_robjointpos(history)
-          
-            if isempty(history)
-                return
-            end
-            clf
-            pos = [history.q]';
-            plot(pos(:,1:6), '-')
-            hold on
-            ylabel('Joint angle')
-            grid
-            xlabel('Time')
-            xaxis(length(history));
-            legend('\theta_1', '\theta_2', '\theta_3', '\theta_4', '\theta_5', '\theta_6')
-        end
+ function plot_robjointpos(history)       
+    if isempty(history)
+        return
+    end
+    clf
+    pos = [history.q]';
+    plot(pos(:,1:6), '-')
+    hold on
+    ylabel('Joint angle')
+    grid
+    xlabel('Time')
+    xaxis(length(history));
+    legend('\theta_1', '\theta_2', '\theta_3', '\theta_4', '\theta_5', '\theta_6')
+ end
+
+%% GetAlgebraicDist - from Lab6Solution
+% determine the algebraic distance given a set of points and the center
+% point and radii of an elipsoid
+%
+% *Inputs:*
+% _points_ (many*(2||3||6) double) x,y,z cartesian point
+% _centerPoint_ (1 * 3 double) xc,yc,zc of an ellipsoid
+% _radii_ (1 * 3 double) a,b,c of an ellipsoid
+%
+% *Returns:* 
+% _algebraicDist_ (many*1 double) algebraic distance for the ellipsoid
+
+function algebraicDist = GetAlgebraicDist(points, centerPoint, radii)
+    algebraicDist = ((points(:,1)-centerPoint(1))/radii(1)).^2 ...
+              + ((points(:,2)-centerPoint(2))/radii(2)).^2 ...
+              + ((points(:,3)-centerPoint(3))/radii(3)).^2;
+end
