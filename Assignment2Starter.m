@@ -121,7 +121,7 @@ classdef Assignment2Starter < handle
             self.sugarcube = MoveableObject('sugarcube.ply'); 
             self.sugarcube.Move(transl(-1.2,-3.5,1.05));
 
-            InitialiseRobot();
+            InitialiseRobot(self);
           
             axis equal
             camlight
@@ -279,176 +279,27 @@ classdef Assignment2Starter < handle
 
             %% 5. Pickup cup and place on appropriate available coaster (Visual servoing part)
             q = self.robot.model.getpos(); % ** Change q to suit 
-            GetObject(self.robot.model, self.cups{self.orderCount}.currentLocation, q, 50, self.L, self.h); % Get the cup
-
-            q = self.robot.model.getpos(); % ** Change q to suit 
-            %TODO Move robot to left side of linear rail facing coaster
-            %section while holding a cup find q values needed
-            MoveToFindCoaster(self.robot.model, self.cups{self.orderCount}, q, 100, self.L); % TODO Add emergency stop check 
+            %MoveToFindCoaster(self.robot.model, self.cups{self.orderCount}, q, 100, self.L); % TODO Add emergency stop check 
+            MoveToFindCoaster(self.robot.model, self.cups{self.orderCount},q, 100, self.L); % TODO Add emergency stop check 
             q0 = self.robot.model.getpos(); % ** Change q to suit 
 
             if self.h == true %Check for emergency stop
                 self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'EMERGENCY STOP']};
                 return
             end
-
-            % Can we put the visual servoing in its own function?
-
-            % Create image target (coaster in the centre of the image plane)
-            coasterStar = [512; 512];
-            %Create coaster as a 3D point
-            coaster = [-0.67;-3.6;1.08]; %TODO change later, using current position to make sure dobot can actually reach
+            
+            %Create coaster in workspace %TODO move to setup part of code
+            %coaster = [-0.67;-3.6;1.08]; %TODO change later, using current position to make sure dobot can actually reach
+            coaster = [-0.67,-0.67,-0.77,-0.77;
+                    -3.6,-3.5,-3.5,-3.6;
+                     1.04,1.04,1.04,1.04];
             figure(1)
-            plot_circle(coaster,0.05,'b') %TODO fill colour
-
-            %Add the camera (specs sismilar to Lab 8)
-            cam = CentralCamera('focal', 0.08, 'pixel', 10e-5, ...
-            'resolution', [1024 1024], 'centre', [512 512],'name', 'DOBOTcam');
-            % frame rate
-            fps = 25;
-            %Define values
-            %gain of the controler
-            lambda = 0.6;
-            %depth of the IBVS
-            depth = mean (coaster(1,:));
-
-            Tc0 = self.robot.model.fkine(q0);
-            Tc0
-            q0
-            q0'
-            self.robot.model.animate(q0');
-            drawnow
-
-            %plot camera and points
-            cam.T = Tc0;
-
-            %Display camera
-            cam.plot_camera('Tcam',Tc0 ,'label','scale',0.05);
-            lighting gouraud
-            light
+            plot_sphere(coaster,0.05,'b') 
+            %plot_circle(coaster,0.15,'b') %TODO fill colour
             
-            %Display in image view
-            %Project points to the image
-            p = cam.plot(coaster, 'Tcam', Tc0);
-            %camera view and plotting
-            cam.clf()
-            cam.plot(coasterStar, '*'); % create the camera view
-            cam.hold(true);
-            cam.plot(coaster, 'Tcam', Tc0, 'o'); % create the camera view
-            pause(2)
-            cam.hold(true);
-            cam.plot(coaster);    % show initial view
-
-            %Initialise display arrays
-            vel_p = [];
-            uv_p = [];
-            history = [];
+            VisualServoing(self.robot.model,q0,coaster); %TODO FIX!!!!
 
             pause
-            %% 1.4 Loop
-            % loop of the visual servoing
-            ksteps = 0;
-             while true
-                    ksteps = ksteps + 1;
-                    
-                    % compute the view of the camera
-                    uv = cam.plot(coaster);
-                    
-                    % compute image plane error as a column
-                    e = coasterStar-uv;   % feature error
-                    e = e(:);
-                    Zest = [];
-                    
-                    % compute the Jacobian
-                    if isempty(depth)
-                        % exact depth from simulation (not possible in practice)
-                        pt = homtrans(inv(Tcam), coaster);
-                        J = cam.visjac_p(uv, pt(3,:) );
-                    elseif ~isempty(Zest)
-                        J = cam.visjac_p(uv, Zest);
-                    else
-                        J = cam.visjac_p(uv, depth );
-                    end
-            
-                    % compute the velocity of camera in camera frame
-                    try
-                        v = lambda * pinv(J) * e;
-                    catch
-                        status = -1;
-                        return
-                    end
-                    fprintf('v: %.3f %.3f %.3f %.3f %.3f %.3f\n', v);
-            
-                    %compute robot's Jacobian and inverse
-                    J2 = self.robot.model.jacobn(q0);
-                    Jinv = pinv(J2);
-                    % get joint velocities
-                    qp = Jinv*v;
-            
-                     
-                     %Maximum angular velocity cannot exceed 180 degrees/s
-                     ind=find(qp>pi);
-                     if ~isempty(ind)
-                         qp(ind)=pi;
-                     end
-                     ind=find(qp<-pi);
-                     if ~isempty(ind)
-                         qp(ind)=-pi;
-                     end
-            
-                    %Update joints 
-                    q = q0 + (1/fps)*qp;
-                    q0
-                    q
-                    q'
-                    self.robot.model.animate(q');
-            
-                    %Get camera location
-                    Tc = self.robot.model.fkine(q);
-                    cam.T = Tc;
-            
-                    drawnow
-                    
-                    % update the history variables
-                    hist.uv = uv(:);
-                    vel = v;
-                    hist.vel = vel;
-                    hist.e = e;
-                    hist.en = norm(e);
-                    hist.jcond = cond(J);
-                    hist.Tcam = Tc;
-                    hist.vel_p = vel;
-                    hist.uv_p = uv;
-                    hist.qp = qp;
-                    hist.q = q;
-            
-                    history = [history hist];
-            
-                     pause(1/fps)
-            
-                    if ~isempty(200) && (ksteps > 200)
-                        break;
-                    end
-                    
-                    %update current joint position
-                    q0 = q;
-             end %loop finishes
-             
-            %% 1.5 Plot results
-            figure()            
-            plot_p(history,coasterStar,cam)
-            figure()
-            plot_camera(history)
-            figure()
-            plot_vel(history)
-            figure()
-            plot_robjointpos(history)
-            figure()
-            plot_robjointvel(history)
-            pause
-
-            %TODO continue with visual servoing
-            
             
             self.cups{self.orderCount}.goalLocation = self.coasters{self.orderCount}.currentLocation;
             RMRC(self.robot.model, self.cups{self.orderCount}, self.L, self.h);
@@ -459,7 +310,6 @@ classdef Assignment2Starter < handle
                 self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'EMERGENCY STOP']};
                 return
             end
-            
             %% Lower Barriers
             self.LowerBarriers();
 
@@ -750,6 +600,151 @@ function MoveToFindCoaster(model, object, q, steps, L)
         object.Move(modelTr);
         drawnow()
     end
+end
+
+%Visual servoing code to find coaster
+function VisualServoing(model,q0,coaster) %adapted from Lab 8 visual servoing code
+            % Create image target (coaster in the centre of the image plane)           
+            coasterStar = [800 200 200 800; 300 300 800 800];
+            %coasterStar = [512; 512]; %centre of the image
+
+
+            %Add the camera (specs similar to Lab 8 visual servoing code)
+            cam = CentralCamera('focal', 0.08, 'pixel', 10e-5, ...
+            'resolution', [1024 1024], 'centre', [512 512],'name', 'DOBOTcam');
+            % frame rate
+            fps = 1000;
+
+            %Define values
+            %gain of the controler
+            lambda = 0.6;
+            %depth of the IBVS
+            depth = mean (coaster(1,:));
+
+            Tc0 = model.fkine(q0);
+
+            %plot camera
+            cam.T = Tc0;
+            cam.plot_camera('Tcam',Tc0 ,'label','scale',0.05);
+            lighting gouraud
+            light
+            
+            %Display in image view
+            %Project points to the image
+            p = cam.plot(coaster, 'Tcam', Tc0);
+            %camera view and plotting
+            cam.clf()
+            cam.plot(coasterStar, '*'); % create the camera view
+            cam.hold(true);
+            cam.plot(coaster, 'Tcam', Tc0, 'o'); % create the camera view
+            pause(2)
+            cam.hold(true);
+            cam.plot(coaster);    % show initial view
+
+            %Initialise display arrays
+            vel_p = [];
+            uv_p = [];
+            history = [];
+
+            %% 1.4 Loop
+            % loop of the visual servoing
+            ksteps = 0;
+             while true
+                    ksteps = ksteps + 1;
+                    
+                    % compute the view of the camera
+                    uv = cam.plot(coaster);
+                    
+                    % compute image plane error as a column
+                    e = coasterStar-uv;  % feature error
+                    e = e(:);
+                    Zest = [];
+                    
+
+                    % compute the Jacobian
+                    if isempty(depth)
+                        % exact depth from simulation (not possible in practice)
+                        pt = homtrans(inv(Tcam), coaster);
+                        J = cam.visjac_p(uv, pt(3,:) );
+                    elseif ~isempty(Zest)
+                        J = cam.visjac_p(uv, Zest);
+                    else
+                        J = cam.visjac_p(uv, depth );
+                    end
+            
+                    % compute the velocity of camera in camera frame
+                    try
+                        v = lambda * pinv(J) * e;
+                    catch
+                        status = -1;
+                        return
+                    end
+                    fprintf('v: %.3f %.3f %.3f %.3f %.3f %.3f\n', v);
+            
+                    %compute robot's Jacobian and inverse
+                    J2 = model.jacobn(q0);
+                    Jinv = pinv(J2);
+                    % get joint velocities
+                    qp = Jinv*v;
+            
+                     
+                     %Maximum angular velocity cannot exceed 180 degrees/s
+                     ind=find(qp>pi);
+                     if ~isempty(ind)
+                         qp(ind)=pi;
+                     end
+                     ind=find(qp<-pi);
+                     if ~isempty(ind)
+                         qp(ind)=-pi;
+                     end
+            
+                    %Update joints
+                    q = q0' + (1/fps)*qp;
+                    model.animate(q');
+            
+                    %Get camera location
+                    Tc = model.fkine(q);
+                    cam.T = Tc;
+                    drawnow
+                    
+                    % update the history variables
+                    hist.uv = uv(:);
+                    vel = v;
+                    hist.vel = vel;
+                    hist.e = e;
+                    hist.en = norm(e);
+                    hist.jcond = cond(J);
+                    hist.Tcam = Tc;
+                    hist.vel_p = vel;
+                    hist.uv_p = uv;
+                    hist.qp = qp;
+                    hist.q = q;
+            
+                    history = [history hist];
+            
+                     pause(1/fps)
+            
+                    if ~isempty(500) && (ksteps > 200)
+                        break;
+                    end
+                    
+                    %update current joint position
+                    q0 = q';
+                    pause
+             end
+             
+            %% 1.5 Plot results
+            figure()            
+            plot_p(history,coasterStar,cam)
+            figure()
+            plot_camera(history)
+            figure()
+            plot_vel(history)
+            figure()
+            plot_robjointpos(history)
+            figure()
+            plot_robjointvel(history)
+            
 end
 
 %% Functions for plotting (From Lab 8 Solution)
