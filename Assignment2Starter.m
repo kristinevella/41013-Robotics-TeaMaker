@@ -32,6 +32,9 @@ classdef Assignment2Starter < handle
 
         orderCount;
 
+        radii;
+        centerPoint;
+
     end
     methods
         function self = Assignment2Starter() % Constructor
@@ -49,10 +52,44 @@ classdef Assignment2Starter < handle
             hold on
             axis equal
             
-            self.InitialiseRobot();
+            InitialiseRobot(self);
+            
+            %% Create cube - For initial collision testing only - Replace
+            % with kitchen object
+
+            % One side of the cube
+            [Y,Z] = meshgrid(-0.2:0.05:0.2,-0.2:0.05:0.2);
+            sizeMat = size(Y);
+            X = repmat(0.2,sizeMat(1),sizeMat(2));
+            oneSideOfCube_h = surf(X,Y,Z);
+            
+            % Combine one surface as a point cloud
+            cubePoints = [X(:),Y(:),Z(:)];
+            
+            % Make a cube by rotating the single side by 0,90,180,270, and around y to make the top and bottom faces
+            cubePoints = [ cubePoints ...
+                         ; cubePoints * rotz(pi/2)...
+                         ; cubePoints * rotz(pi) ...
+                         ; cubePoints * rotz(3*pi/2) ...
+                         ; cubePoints * roty(pi/2) ...
+                         ; cubePoints * roty(-pi/2)];         
+                     
+            % Plot the cube's point cloud         
+            cubeAtOigin_h = plot3(cubePoints(:,1),cubePoints(:,2),cubePoints(:,3),'r.');
+            cubePoints = cubePoints + repmat([-1,-3,1.5],size(cubePoints,1),1);
+            cube_h = plot3(cubePoints(:,1),cubePoints(:,2),cubePoints(:,3),'b.');
+
+            %qGoal = self.robot.model.getpos();
+            qGoal = [-1,0,0,0,0,0];
+
+            InitialiseEllipsoids(self)
+            %self.robot.model.animate([-1,0,0,0,0,0]);
+            
+            % TODO Add a number of tries or do a check first to see if the goal
+            % position is in collision and therefore it is impossible
+            AvoidCollisions(self.robot, self.radii, self.centerPoint, qGoal, cubePoints, self.L, self.h);
 
             %RMRC(self.robot.model, self.cups{1}, transl(self.WATER_LOCATION), self.L);
-            AvoidCollisions(self.robot, self.L, self.h);
         end
         % DEBUG END
 
@@ -62,6 +99,33 @@ classdef Assignment2Starter < handle
             self.robot.model.base = self.robot.model.base * transl(-0.7,-3.3,1.08) * trotx(pi/2); % Moved implementation of robot location from robot class, to Assignment2Starter
             q = self.robot.model.getpos();
             self.robot.model.animate(q);
+        end
+
+        function InitialiseEllipsoids(self)
+            self.L.mlog = {self.L.DEBUG,mfilename('class'),['InitialiseEllipsoids: ','Called']};
+            % New values for the ellipsoid (need to check for different configurations) TODO
+            self.centerPoint = [0,0,0];
+            self.radii{1} = [0.1,0.1,0.1];
+            self.radii{2} = [0.1,0.15,0.1];
+            self.radii{3} = [0.1,0.15,0.1];
+            self.radii{4} = [0.1,0.08,0.05];
+            self.radii{5} = [0.1,0.08,0.05];
+            self.radii{6} = [0.07,0.1,0.1];
+            self.radii{7} = [0.03,0.03,0.03];  
+        
+%             % DEBUG - for visualising only
+%             for i = 1:self.robot.model.n+1                                               % robot links + base
+%                 [X,Y,Z] = ellipsoid(self.centerPoint(1), self.centerPoint(2), self.centerPoint(3), self.radii{i}(1), self.radii{i}(2), self.radii{i}(3));
+%                 self.robot.model.points{i} = [X(:),Y(:),Z(:)];
+%                 warning off
+%                 self.robot.model.faces{i} = delaunay(self.robot.model.points{i});    
+%                 warning on;
+%         
+%                 self.robot.model.plot3d([0,0,pi/4,pi/4,0,0],'noarrow','workspace',self.robot.workspace); %for DEBUG
+%             end
+%         
+%             self.robot.model.plot3d([0,0,pi/4,pi/4,0,0],'noarrow','workspace',self.robot.workspace); %TODO Change workspace??
+%             % DEBUG end
         end
 
         function SetUpEnvironment(self)
@@ -367,7 +431,51 @@ function MoveObject(model, object, q, steps, L, h)
 end
 
 % Collision Avoidance - derrived from Lab6Solution
-function AvoidCollisions(robot, L, h)
+function result = IsCollision(robot, radii, centerPoint, qMatrix, points, L, h)
+    L.mlog = {L.DEBUG,mfilename('class'),['IsCollision: ','Called']};
+
+    if h == true %Check for emergency stop
+        L.mlog = {L.DEBUG,mfilename('class'),['IsCollision: ','EMERGENCY STOP']};
+        return
+    end
+
+    result = false;
+  
+    for qIndex = 1:size(qMatrix,1)
+
+%         % Get link poses for all links
+%         q = qMatrix(qIndex,:); %get pos?
+%         tr = zeros(4,4,robot.model.n+1);
+%         tr(:,:,1) = robot.model.base;
+%         l = robot.model.links;
+%         for i = 1:robot.model.n
+%             if i == 1
+%                 tr(:,:,i+1) = tr(:,:,i) * trotz(l(i).theta) * transl(0,0,q(i)) * transl(l(i).a,0,0) * trotx(l(i).alpha); % prismatic joint
+%             else
+%                 tr(:,:,i+1) = tr(:,:,i) * trotz(q(i) + l.offset) * transl(0,0,l(i).d) * transl(l(i).a,0,0) * trotx(l(i).alpha);
+%             end
+%         end
+
+        tr = GetLinkPoses(qMatrix(qIndex,:), robot.model);
+    
+        for i = 1:size(tr,3)
+            pointsAndOnes = [inv(tr(:,:,i)) * [points,ones(size(points,1),1)]']';
+            updatedPoints = pointsAndOnes(:,1:3);
+            algebraicDist = GetAlgebraicDist(updatedPoints, centerPoint, radii{i});
+            pointsColliding = find(algebraicDist <= 1,1);                       % added the ,1 to improve performance (suggestion from MATLAB)
+            if ~isempty(pointsColliding)
+                result = true;
+                %%disp('Collision! Ellipsoid #' + num2str(i));
+                L.mlog = {L.DEBUG,mfilename('class'),['DetectCollisions: ','Collision detected inside the ',num2str(i),'th ellipsoid']};
+                return;
+            end
+        end
+    end
+end
+    
+% Collision Avoidance - derrived from Lab6Solution
+% From current position to goal position
+function AvoidCollisions(robot, radii, centerPoint, qGoal, points, L, h)
     L.mlog = {L.DEBUG,mfilename('class'),['AvoidCollisions: ','Called']};
 
     if h == true %Check for emergency stop
@@ -375,73 +483,54 @@ function AvoidCollisions(robot, L, h)
         return
     end
 
-    alpha(0.1); %Remove TODO
-
-    % Create cube - For initial testing only - TODO remove
-    % One side of the cube
-    [Y,Z] = meshgrid(-0.75:0.05:0.75,-0.75:0.05:0.75);
-    sizeMat = size(Y);
-    X = repmat(0.75,sizeMat(1),sizeMat(2));
-    oneSideOfCube_h = surf(X,Y,Z);
-    
-    % Combine one surface as a point cloud
-    cubePoints = [X(:),Y(:),Z(:)];
-    
-    % Make a cube by rotating the single side by 0,90,180,270, and around y to make the top and bottom faces
-    cubePoints = [ cubePoints ...
-                 ; cubePoints * rotz(pi/2)...
-                 ; cubePoints * rotz(pi) ...
-                 ; cubePoints * rotz(3*pi/2) ...
-                 ; cubePoints * roty(pi/2) ...
-                 ; cubePoints * roty(-pi/2)];         
-             
-    % Plot the cube's point cloud         
-    cubeAtOigin_h = plot3(cubePoints(:,1),cubePoints(:,2),cubePoints(:,3),'r.');
-    cubePoints = cubePoints + repmat([-2,-3,1],size(cubePoints,1),1);
-    cube_h = plot3(cubePoints(:,1),cubePoints(:,2),cubePoints(:,3),'b.');
-
-    % New values for the ellipsoid (need to check for different configurations) TODO
-    centerPoint = [0,0,0];
-    radii{1} = [0.1,0.1,0.1];
-    radii{2} = [0.1,0.15,0.1];
-    radii{3} = [0.1,0.15,0.1];
-    radii{4} = [0.1,0.05,0.07];
-    radii{5} = [0.1,0.08,0.05];
-    radii{6} = [0.05,0.09,0.1];
-    radii{7} = [0.03,0.03,0.03];  
-
-    % DEBUG - for visualising only
-    for i = 1:robot.model.n+1                                               % robot links + base
-        [X,Y,Z] = ellipsoid(centerPoint(1), centerPoint(2), centerPoint(3), radii{i}(1), radii{i}(2), radii{i}(3));
-        robot.model.points{i} = [X(:),Y(:),Z(:)];
-        warning off
-        robot.model.faces{i} = delaunay(robot.model.points{i});    
-        warning on;
-
-        robot.model.plot3d([0,0,pi/4,pi/4,0,0],'noarrow','workspace',robot.workspace); %for DEBUG
+    %robot.animate(q1);
+    qWaypoints = [robot.model.getpos();qGoal];
+    isCollision = true;
+    checkedTillWaypoint = 1;
+    qMatrix = [];
+    while (isCollision)
+        startWaypoint = checkedTillWaypoint;
+        for i = startWaypoint:size(qWaypoints,1)-1
+            qMatrixJoin = InterpolateWaypointRadians(qWaypoints(i:i+1,:),deg2rad(10));
+            if ~IsCollision(robot, radii, centerPoint, qMatrixJoin, points, L, h)
+                qMatrix = [qMatrix; qMatrixJoin]; %#ok<AGROW>
+                robot.model.animate(qMatrixJoin);
+                size(qMatrix)
+                isCollision = false;
+                checkedTillWaypoint = i+1;
+                % Now try and join to the final goal (qGoal)
+                qMatrixJoin = InterpolateWaypointRadians([qMatrix(end,:); qGoal],deg2rad(10));
+                if ~IsCollision(robot, radii, centerPoint, qMatrixJoin, points, L, h)
+                    qMatrix = [qMatrix;qMatrixJoin];
+                    % Reached goal without collision, so break out
+                    break;
+                end
+            else
+                % Randomly pick a pose that is not in collision - need to
+                % check if its within limits TODO
+                qRand = (2 * rand(1,6) - 1) * pi;
+                while (IsCollision(robot, radii, centerPoint, qRand, points, L, h) || ~WithinLimits(robot, qRand))
+                    qRand = (2 * rand(1,6) - 1) * pi;
+                end
+                qWaypoints =[ qWaypoints(1:i,:); qRand; qWaypoints(i+1:end,:)];
+                isCollision = true;
+                break;
+            end
+        end
     end
+    robot.model.animate(qMatrix)
 
-    robot.model.plot3d([0,0,pi/4,pi/4,0,0],'noarrow','workspace',robot.workspace); %TODO Change workspace??
-    % DEBUG end
-    
-    % All links
-    q = robot.model.getpos();
-    tr = zeros(4,4,robot.model.n+1);
-    tr(:,:,1) = robot.model.base;
-    L = robot.model.links;
-    for i = 1 : robot.model.n
-        tr(:,:,i+1) = tr(:,:,i) * trotz(q(i)) * transl(0,0,L(i).d) * transl(L(i).a,0,0) * trotx(L(i).alpha); %%% What is this doing TODO
-    end
-    
-    % Go through each ellipsoid
-    for i = 1: size(tr,3)
-        cubePointsAndOnes = [inv(tr(:,:,i)) * [cubePoints,ones(size(cubePoints,1),1)]']';
-        updatedCubePoints = cubePointsAndOnes(:,1:3);
-        algebraicDist = GetAlgebraicDist(updatedCubePoints, centerPoint, radii{i});
-        pointsInside = find(algebraicDist < 1);
-        disp(['2.10: There are ', num2str(size(pointsInside,1)),' points inside the ',num2str(i),'th ellipsoid']);
-    end
 end 
+
+function result = WithinLimits(robot, q)
+    result = true;
+    for i=1:robot.model.n
+        if ~(q(i) > robot.model.qlim(i,1)) && (q(i) < robot.model.qlim(i,2))
+            result = false;
+            return;
+        end
+    end
+end
 
 % TODO: Need to change initial parameters in RMRC each time depending on
 % each unique trajectory to get the smoothest motion that doesn't
@@ -884,4 +973,56 @@ function algebraicDist = GetAlgebraicDist(points, centerPoint, radii)
     algebraicDist = ((points(:,1)-centerPoint(1))/radii(1)).^2 ...
               + ((points(:,2)-centerPoint(2))/radii(2)).^2 ...
               + ((points(:,3)-centerPoint(3))/radii(3)).^2;
+end
+
+%% GetLinkPoses - adapted from Lab5_Solution_Question2and3
+% q - robot joint angles
+% robot -  seriallink robot model
+% transforms - list of transforms
+function [ transforms ] = GetLinkPoses( q, robot)
+    links = robot.links;
+    transforms = zeros(4, 4, length(links) + 1);
+    transforms(:,:,1) = robot.base;
+    
+    for i = 1:length(links)
+        L = links(1,i);
+        
+        current_transform = transforms(:,:, i);
+        if i == 1
+            current_transform = current_transform * trotz(L.theta) * ...
+            transl(0,0,q(1,i)) * transl(L.a,0,0) * trotx(L.alpha);
+        else
+            current_transform = current_transform * trotz(q(1,i) + L.offset) * ...
+            transl(0,0, L.d) * transl(L.a,0,0) * trotx(L.alpha);
+        end
+        transforms(:,:,i + 1) = current_transform;
+    end
+end
+
+%% InterpolateWaypointRadians - from Lab5_Solution_Question2and3
+% Given a set of waypoints, finely intepolate them
+function qMatrix = InterpolateWaypointRadians(waypointRadians,maxStepRadians)
+if nargin < 2
+    maxStepRadians = deg2rad(1);
+end
+
+qMatrix = [];
+for i = 1: size(waypointRadians,1)-1
+    qMatrix = [qMatrix ; FineInterpolation(waypointRadians(i,:),waypointRadians(i+1,:),maxStepRadians)]; %#ok<AGROW>
+end
+end
+
+%% FineInterpolation - from Lab5_Solution_Question2and3
+% Use results from Q2.6 to keep calling jtraj until all step sizes are
+% smaller than a given max steps size
+function qMatrix = FineInterpolation(q1,q2,maxStepRadians)
+if nargin < 3
+    maxStepRadians = deg2rad(1);
+end
+    
+steps = 2;
+while ~isempty(find(maxStepRadians < abs(diff(jtraj(q1,q2,steps))),1))
+    steps = steps + 1;
+end
+qMatrix = jtraj(q1,q2,steps);
 end
