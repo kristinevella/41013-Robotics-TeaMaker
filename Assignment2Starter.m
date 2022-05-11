@@ -48,6 +48,16 @@ classdef Assignment2Starter < handle
             
             self.orderCount = 1;
             SetUpEnvironment(self);
+            view([80 -70 50]); % Show full kitchen
+            pause;
+            SetFigureView(self); % Zoom in for clarity 
+
+        end
+
+        function SetFigureView(self)
+            view([50 -70 50]);
+            axis([ -3, 1, -4, 0, -2, 3]);
+            camzoom(2.5);
         end
 
         % DEBUG
@@ -84,7 +94,7 @@ classdef Assignment2Starter < handle
 %             cube_h = plot3(cubePoints(:,1),cubePoints(:,2),cubePoints(:,3),'b.');
 
             PlaceColidableItem(self,[-0.9,-3,1]);
-            itemPoints = self.sprayBottle.vertices(:,1:3);
+            itemPoints = self.sprayBottle.tVertices;
             item_h = plot3(itemPoints(:,1),itemPoints(:,2),itemPoints(:,3),'b.');
 
             %qGoal = self.robot.model.getpos();
@@ -175,19 +185,15 @@ classdef Assignment2Starter < handle
                 self.coasters{i} = MoveableObject('coaster.ply');
             end
 
-            self.cups{1}.Move(transl(-0.3,-2.5,1.12));
-            self.cups{2}.Move(transl(-0.3,-2.7,1.12));
-            self.cups{3}.Move(transl(-0.3,-2.9,1.12));
-            self.cups{4}.Move(transl(-0.3,-3.1,1.12));
+            self.cups{1}.Move(transl(-0.4,-2.5,1.12));
+            self.cups{2}.Move(transl(-0.4,-2.7,1.12));
+            self.cups{3}.Move(transl(-0.4,-2.9,1.12));
+            self.cups{4}.Move(transl(-0.4,-3.1,1.12));
 
             self.coasters{1}.Move(transl(-0.20,-3.6,1.04));
             self.coasters{2}.Move(transl(-0.45,-3.6,1.04));
             self.coasters{3}.Move(transl(-0.70,-3.6,1.04));
             self.coasters{4}.Move(transl(-0.95,-3.6,1.04));
-       
-%             Tea bag will appear once collected from box?
-%             self.teaBag = MoveableObject('teabag.ply');
-%             self.teaBag.Move(transl(-3,2.6,1.15)); %Starts on the bench for now
 
             self.sugarcube = MoveableObject('sugarcube.ply'); 
             self.sugarcube.Move(transl(-1.2,-3.5,1.05));
@@ -196,10 +202,6 @@ classdef Assignment2Starter < handle
           
             axis equal
             camlight
-
-            % Set the view in a separate function?
-            %view(40,30)
-            %camzoom(1.5)
         end
 
         function PlaceColidableItem(self, location)
@@ -289,6 +291,7 @@ classdef Assignment2Starter < handle
             q = self.robot.model.getpos(); % ** Change q to suit 
             GetObject(self.robot.model, selectedTeaLocation, q, 50, self.L, self.h); % Go to the teabag location
             
+            try delete(self.teaBag); end
             self.teaBag = MoveableObject('teabag.ply'); % Instantiate tea bag
             self.teaBag.Move(selectedTeaLocation);
 
