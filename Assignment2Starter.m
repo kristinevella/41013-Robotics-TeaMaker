@@ -35,6 +35,10 @@ classdef Assignment2Starter < handle
         radii;
         centerPoint;
 
+        % Flag to note if the robot should be connected to during the
+        % running of the application
+        movePhysicalDobot;
+
     end
     methods
         function self = Assignment2Starter() % Constructor
@@ -427,6 +431,10 @@ function MoveObject(model, object, q, steps, L, h)
         modelTr = model.fkine(modelTraj(i,:));
         object.Move(modelTr);
         drawnow()
+    end
+
+    if self.movePhysicalDobot
+        self.MoveRobot(modelTraj,L,h)
     end
 end
 
@@ -1025,4 +1033,62 @@ while ~isempty(find(maxStepRadians < abs(diff(jtraj(q1,q2,steps))),1))
     steps = steps + 1;
 end
 qMatrix = jtraj(q1,q2,steps);
+end
+
+%% Move Robot - Implemented from Canvas https://github.com/gapaul/dobot_magician_driver/wiki/Instructions-For-Native-Linux
+
+function MoveRobot(modelTraj, L, h)
+    % ROS Initialisation
+    rosinit;
+
+    % Setup safety status subscriber. Used to cancel robot connection of
+    % robot cannot be moved
+    safetyStatusSubscriber = rossubscriber('/dobot_magician/safety_status');
+    
+    % Initialise the Dobot
+    [safetyStatePublisher,safetyStateMsg] = rospublisher('/dobot_magician/target_safety_status');
+    safetyStateMsg.Data = 2;
+    send(safetyStatePublisher,safetyStateMsg);
+
+    % Start the target joing state publisher
+    [targetJointTrajPub,targetJointTrajMsg] = rospublisher('/dobot_magician/target_joint_states');
+    trajectoryPoint = rosmessage("trajectory_msgs/JointTrajectoryPoint");
+
+    % Allow some time for MATLAB to start the subscribers and to initialise
+    pause(2);
+
+    % Given the modelTraj from the MoveObject function, 
+    steps = length(modelTraj);
+
+    actualTraj = zeros(steps,4);
+    actualTraj(:,1) = modelTraj(:,2);
+    actualTraj(:,2) = modelTraj(:,3);
+    actualTraj(:,3) = modelTraj(:,4) - pi/2 + modelTraj(:,3);
+    actualTraj(:,4) = modelTraj(:,6);
+
+    for i = 1:steps
+        if h == true %Check for emergency stop
+            safetyStateMsg.Data = 2;
+            send(safetyStatePublisher,safetyStateMsg);
+            L.mlog = {L.DEBUG,mfilename('class'),['MoveRobot: ','EMERGENCY STOP']};
+            return
+        end
+
+        currentSafetyStatus = safetyStatusSubscriber.LatestMessage.Data;
+        if currentSafetyStatus ~= 4 %Check if the dobot is operable
+            safetyStateMsg.Data = 2;
+            send(safetyStatePublisher,safetyStateMsg);
+            L.mlog = {L.DEBUG,mfilename('class'),['MoveRobot: ','Robot not OPERATING']};
+            return
+        end
+
+        % Pull the joint states from the actualTraj, and publish that data
+        % to the Dobot
+        trajectoryPoint.Positions = actualTraj(i,:);
+        targetJointTrajMsg.Points = trajectoryPoint;
+        send(targetJointTrajPub,targetJointTrajMsg);
+    end
+
+    % Close the ROS connection / node
+    rosshutdown;
 end
