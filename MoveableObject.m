@@ -28,6 +28,7 @@ classdef MoveableObject < handle
         function Move(self,location)
             transformedVertices = [self.vertices,ones(size(self.vertices,1),1)] * location';
             set(self.mesh,'Vertices',transformedVertices(:,1:3));
+            self.vertices = transformedVertices;
             self.SetCurrentLocation(location);
         end    
 

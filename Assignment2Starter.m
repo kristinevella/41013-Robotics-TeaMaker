@@ -61,37 +61,41 @@ classdef Assignment2Starter < handle
             %% Create cube - For initial collision testing only - Replace
             % with kitchen object
 
-            % One side of the cube
-            [Y,Z] = meshgrid(-0.2:0.05:0.2,-0.2:0.05:0.2);
-            sizeMat = size(Y);
-            X = repmat(0.2,sizeMat(1),sizeMat(2));
-            oneSideOfCube_h = surf(X,Y,Z);
-            
-            % Combine one surface as a point cloud
-            cubePoints = [X(:),Y(:),Z(:)];
-            
-            % Make a cube by rotating the single side by 0,90,180,270, and around y to make the top and bottom faces
-            cubePoints = [ cubePoints ...
-                         ; cubePoints * rotz(pi/2)...
-                         ; cubePoints * rotz(pi) ...
-                         ; cubePoints * rotz(3*pi/2) ...
-                         ; cubePoints * roty(pi/2) ...
-                         ; cubePoints * roty(-pi/2)];         
-                     
-            % Plot the cube's point cloud         
-            cubeAtOigin_h = plot3(cubePoints(:,1),cubePoints(:,2),cubePoints(:,3),'r.');
-            cubePoints = cubePoints + repmat([-1,-3,1.5],size(cubePoints,1),1);
-            cube_h = plot3(cubePoints(:,1),cubePoints(:,2),cubePoints(:,3),'b.');
+%             % One side of the cube
+%             [Y,Z] = meshgrid(-0.2:0.05:0.2,-0.2:0.05:0.2);
+%             sizeMat = size(Y);
+%             X = repmat(0.2,sizeMat(1),sizeMat(2));
+%             oneSideOfCube_h = surf(X,Y,Z);
+%             
+%             % Combine one surface as a point cloud
+%             cubePoints = [X(:),Y(:),Z(:)];
+%             
+%             % Make a cube by rotating the single side by 0,90,180,270, and around y to make the top and bottom faces
+%             cubePoints = [ cubePoints ...
+%                          ; cubePoints * rotz(pi/2)...
+%                          ; cubePoints * rotz(pi) ...
+%                          ; cubePoints * rotz(3*pi/2) ...
+%                          ; cubePoints * roty(pi/2) ...
+%                          ; cubePoints * roty(-pi/2)];         
+%                      
+%             % Plot the cube's point cloud         
+%             cubeAtOigin_h = plot3(cubePoints(:,1),cubePoints(:,2),cubePoints(:,3),'r.');
+%             itemPoints = cubePoints + repmat([-1,-3,1.5],size(cubePoints,1),1);
+%             cube_h = plot3(cubePoints(:,1),cubePoints(:,2),cubePoints(:,3),'b.');
+
+            PlaceColidableItem(self,[-0.9,-3,1]);
+            itemPoints = self.sprayBottle.vertices(:,1:3);
+            item_h = plot3(itemPoints(:,1),itemPoints(:,2),itemPoints(:,3),'b.');
 
             %qGoal = self.robot.model.getpos();
-            qGoal = [-1,0,0,0,0,0];
+            qGoal = deg2rad([0,-134,45,45,0,0]);
 
             InitialiseEllipsoids(self)
             %self.robot.model.animate([-1,0,0,0,0,0]);
             
             % TODO Add a number of tries or do a check first to see if the goal
             % position is in collision and therefore it is impossible
-            AvoidCollisions(self.robot, self.radii, self.centerPoint, qGoal, cubePoints, self.L, self.h);
+            AvoidCollisions(self.robot, self.radii, self.centerPoint, qGoal, itemPoints, self.L, self.h);
 
             %RMRC(self.robot.model, self.cups{1}, transl(self.WATER_LOCATION), self.L);
         end
@@ -107,7 +111,6 @@ classdef Assignment2Starter < handle
 
         function InitialiseEllipsoids(self)
             self.L.mlog = {self.L.DEBUG,mfilename('class'),['InitialiseEllipsoids: ','Called']};
-            % New values for the ellipsoid (need to check for different configurations) TODO
             self.centerPoint = [0,0,0];
             self.radii{1} = [0.1,0.1,0.1];
             self.radii{2} = [0.1,0.15,0.1];
@@ -200,9 +203,11 @@ classdef Assignment2Starter < handle
         end
 
         function PlaceColidableItem(self, location)
-            if self.sprayBottle == null
-                self.sprayBottle = MoveableObject('sprayBottle.ply'); % Initialise spray bottle
-            end
+            try delete(self.sprayBottle); end
+%             if isempty(self.sprayBottle)
+%                 self.sprayBottle = MoveableObject('sprayBottle.ply'); % Initialise spray bottle
+%             end
+            self.sprayBottle = MoveableObject('sprayBottle.ply'); % Initialise spray bottle
             self.sprayBottle.Move(transl(location)); % [-0.2,-3.3,1]
         end
 
@@ -466,14 +471,14 @@ function result = IsCollision(robot, radii, centerPoint, qMatrix, points, L, h)
 
         tr = GetLinkPoses(qMatrix(qIndex,:), robot.model);
     
-        for i = 1:size(tr,3)
+        for i = 3:size(tr,3)                                                % Ignore first and second ellipsoid (base and prismatic link) to reduce calculations 
             pointsAndOnes = [inv(tr(:,:,i)) * [points,ones(size(points,1),1)]']';
             updatedPoints = pointsAndOnes(:,1:3);
             algebraicDist = GetAlgebraicDist(updatedPoints, centerPoint, radii{i});
             pointsColliding = find(algebraicDist <= 1,1);                       % added the ,1 to improve performance (suggestion from MATLAB)
             if ~isempty(pointsColliding)
                 result = true;
-                %%disp('Collision! Ellipsoid #' + num2str(i));
+                disp(['Collision! Ellipsoid #',num2str(i)]);
                 L.mlog = {L.DEBUG,mfilename('class'),['DetectCollisions: ','Collision detected inside the ',num2str(i),'th ellipsoid']};
                 return;
             end
@@ -502,7 +507,7 @@ function AvoidCollisions(robot, radii, centerPoint, qGoal, points, L, h)
             qMatrixJoin = InterpolateWaypointRadians(qWaypoints(i:i+1,:),deg2rad(10));
             if ~IsCollision(robot, radii, centerPoint, qMatrixJoin, points, L, h)
                 qMatrix = [qMatrix; qMatrixJoin]; %#ok<AGROW>
-                robot.model.animate(qMatrixJoin);
+                robot.model.animate(qMatrixJoin); %% Remove??
                 size(qMatrix)
                 isCollision = false;
                 checkedTillWaypoint = i+1;
@@ -514,8 +519,7 @@ function AvoidCollisions(robot, radii, centerPoint, qGoal, points, L, h)
                     break;
                 end
             else
-                % Randomly pick a pose that is not in collision - need to
-                % check if its within limits TODO
+                % Randomly pick a pose that is not in collision
                 qRand = (2 * rand(1,6) - 1) * pi;
                 while (IsCollision(robot, radii, centerPoint, qRand, points, L, h) || ~WithinLimits(robot, qRand))
                     qRand = (2 * rand(1,6) - 1) * pi;
@@ -526,14 +530,17 @@ function AvoidCollisions(robot, radii, centerPoint, qGoal, points, L, h)
             end
         end
     end
-    robot.model.animate(qMatrix)
+    for i=1:size(qMatrix,1)
+        robot.model.animate(qMatrix(i,:));
+        pause(0.05);
+    end
 
 end 
 
 function result = WithinLimits(robot, q)
     result = true;
     for i=1:robot.model.n
-        if ~(q(i) > robot.model.qlim(i,1)) && (q(i) < robot.model.qlim(i,2))
+        if ~((q(i) > robot.model.qlim(i,1)) && (q(i) < robot.model.qlim(i,2)))
             result = false;
             return;
         end
