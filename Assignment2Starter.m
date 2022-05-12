@@ -21,6 +21,8 @@ classdef Assignment2Starter < handle
 
         % Dobot Magician
         robot;
+        % Calc Dobot - 3DOF dobot used for calculation purposes
+        calcDobot;
 
         % Interactive objects
         cups; % Array of cups
@@ -132,6 +134,22 @@ classdef Assignment2Starter < handle
             self.robot.model.animate(q);
         end
 
+        function InitialiseCalcRobot(self)
+            self.L.mlog = {self.L.DEBUG, mfilename('class'),['InitialiseCalcRobot: ', 'Called"']};
+            name = ['CalcDobot',datestr(now,'yyyymmddTHHMMSSFFF')];
+            link(1) = Link([pi     0       0       pi/2    1]); % PRISMATIC Link - copied from the LinearUR5 class
+            link(1).qlim = [-1.33 0];
+            link(2) = Link('d',0.103+0.0362,    'a',0,      'alpha',-pi/2,  'offset',0, 'qlim',[deg2rad(-135),deg2rad(135)]);
+            link(3) = Link('d',0,        'a',0.135,  'alpha',0,      'offset',-pi/2, 'qlim',[deg2rad(5),deg2rad(80)]);
+            link(4) = Link('d',0,        'a',0.147,  'alpha',0,      'offset',pi/4, 'qlim',[deg2rad(-5),deg2rad(85)]);
+            CalcDobot = SerialLink(link,'name',name);
+            %workspace = [-0.4 0.4 -0.4 0.4 -0.1 0.4];
+            CalcDobot.base = CalcDobot.base *  transl(-0.7,-3.3,1.08) * trotx(pi/2);
+            %model.plot(zeros(1,4),'workspace',workspace); % Prismatic
+            %links need workspace to plot, however we aren't plotting this
+            %robot. Commenting out.
+        end
+
         function InitialiseEllipsoids(self)
             visualise = false;                                              % Set to true if wanting to visualise ellipsoids
 
@@ -215,6 +233,7 @@ classdef Assignment2Starter < handle
             self.sugarcube.Move(transl(-0.45 ,-2.2,1.05));
 
             InitialiseRobot(self);
+            InitialiseCalcRobot(self);
             InitialiseEllipsoids(self);
           
             axis equal
@@ -1154,4 +1173,14 @@ function MoveRobot(modelTraj, L, h)
 
     % Close the ROS connection / node
     rosshutdown;
+end
+
+%% CalcDobotTo6Dof - Used to simplfy the calculations on the Dobot due to the hardware limitations of the actual Dobot
+function plotQ = CalcDobotTo6Dof(CalcDobotQ)
+    plotQ = zeros(1,6);
+    plotQ(1) = CalcDobotQ(1);
+    plotQ(2) = CalcDobotQ(2);
+    plotQ(3) = CalcDobotQ(3);
+    plotQ(4) = CalcDobotQ(4);
+    plotQ(5) = pi/2 - CalcDobotQ(4) - CalcDobot(3);
 end
