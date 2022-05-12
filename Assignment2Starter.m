@@ -23,7 +23,7 @@ classdef Assignment2Starter < handle
         % Interactive objects
         cups; % Array of cups
         coasters; % Array of coasters
-        teaBag;
+        teaBags;
         sugarcube;
         spoon;
         sprayBottle;
@@ -48,8 +48,8 @@ classdef Assignment2Starter < handle
             
             self.orderCount = 1;
             SetUpEnvironment(self);
-            view([80 -70 50]); % Show full kitchen
-            pause;
+            %view([80 -70 50]); % Show full kitchen
+            %pause;
             SetFigureView(self); % Zoom in for clarity 
 
         end
@@ -57,7 +57,7 @@ classdef Assignment2Starter < handle
         function SetFigureView(self)
             view([50 -70 50]);
             axis([ -3, 1, -4, 0, -2, 3]);
-            camzoom(2.5);
+            camzoom(2);
         end
 
         % DEBUG
@@ -167,6 +167,8 @@ classdef Assignment2Starter < handle
             %Glass barrier - Begins in lowered position
             self.frontBarrier = surf([-0.1,-0.1;-0.1,-0.1],[-3.7,-3.7;-1.3,-1.3],[self.BARRIER_HEIGHT_MIN,self.BARRIER_HEIGHT_MIN;self.BARRIER_HEIGHT_MIN,self.BARRIER_HEIGHT_MIN],'CData',flip(imread('glass.jpg')),'FaceColor','texturemap','FaceAlpha',0.3,'EdgeColor','none');
             self.sideBarrier = surf([-1.5,-1.5;-0.1,-0.1],[-3.7,-3.7;-3.7,-3.7],[self.BARRIER_HEIGHT_MIN,self.BARRIER_HEIGHT_MIN;self.BARRIER_HEIGHT_MIN,self.BARRIER_HEIGHT_MIN],'CData',flip(imread('glass.jpg')),'FaceColor','texturemap','FaceAlpha',0.3,'EdgeColor','none');
+            % TODO fix location of barrier so it is not on coasters 
+
             %PlaceObject('SeatedGirl.ply', [-2.5,-1.2,0])
 
             PlaceObject('hotwaterdispenser.ply', self.WATER_LOCATION); % Set origin at the tap
@@ -244,6 +246,7 @@ classdef Assignment2Starter < handle
         % Make tea using the robot
         function MakeTea(self, teaType, milkType, sugarQuantity)
             self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'Called']};
+            disp("Tea order placed. Making tea...");
 
             if self.orderCount > 4
                 self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'No empty cups remaining. Cannot make more tea.']};
@@ -291,13 +294,13 @@ classdef Assignment2Starter < handle
             q = self.robot.model.getpos(); % ** Change q to suit 
             GetObject(self.robot.model, selectedTeaLocation, q, 50, self.L, self.h); % Go to the teabag location
             
-            try delete(self.teaBag); end
-            self.teaBag = MoveableObject('teabag.ply'); % Instantiate tea bag
-            self.teaBag.Move(selectedTeaLocation);
+            %try delete(self.teaBag); end % remove after testing
+            self.teaBags{self.orderCount} = MoveableObject('teabag.ply'); % Instantiate new tea bag
+            self.teaBags{self.orderCount}.Move(selectedTeaLocation);
 
-            self.teaBag.goalLocation = self.cups{self.orderCount}.currentLocation;
+            self.teaBags{self.orderCount}.goalLocation = self.cups{self.orderCount}.currentLocation;
             q = self.robot.model.getpos(); % ** Change q to suit
-            MoveObject(self.robot.model, self.teaBag, q, 100, self.L, self.h); % Pick up teabag and place in cup
+            MoveObject(self.robot.model, self.teaBags{self.orderCount}, q, 100, self.L, self.h); % Pick up teabag and place in cup
 
             if self.h == true %Check for emergency stop
                 self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'EMERGENCY STOP']};
@@ -441,9 +444,9 @@ function MoveObject(model, object, q, steps, L, h)
         drawnow()
     end
 
-    if self.movePhysicalDobot
-        self.MoveRobot(modelTraj,L,h)
-    end
+%     if self.movePhysicalDobot
+%         self.MoveRobot(modelTraj,L,h)
+%     end
 end
 
 % Collision Avoidance - derrived from Lab6Solution
