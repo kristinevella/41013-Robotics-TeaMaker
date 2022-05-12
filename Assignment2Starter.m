@@ -57,10 +57,12 @@ classdef Assignment2Starter < handle
 
             self.orderCount = 1;
             SetUpEnvironment(self);
+
+            PlaceCollidableItem(self,[-1,-2,1]); %% Do we want this here from the beginning?
+
             %view([80 -70 50]); % Show full kitchen
             %pause;
             SetFigureView(self); % Zoom in for clarity 
-
         end
 
         function SetFigureView(self)
@@ -104,7 +106,7 @@ classdef Assignment2Starter < handle
 %             itemPoints = cubePoints + repmat([-1,-3,1.5],size(cubePoints,1),1);
 %             cube_h = plot3(cubePoints(:,1),cubePoints(:,2),cubePoints(:,3),'b.');
 
-            PlaceColidableItem(self,[-0.9,-3,1]);
+            PlaceCollidableItem(self,[-0.9,-3,1]);
             itemPoints = self.sprayBottle.tVertices;
             item_h = plot3(itemPoints(:,1),itemPoints(:,2),itemPoints(:,3),'b.');
 
@@ -131,6 +133,8 @@ classdef Assignment2Starter < handle
         end
 
         function InitialiseEllipsoids(self)
+            visualise = false;                                              % Set to true if wanting to visualise ellipsoids
+
             self.L.mlog = {self.L.DEBUG,mfilename('class'),['InitialiseEllipsoids: ','Called']};
             self.centerPoint = [0,0,0];
             self.radii{1} = [0.1,0.1,0.1];
@@ -141,17 +145,17 @@ classdef Assignment2Starter < handle
             self.radii{6} = [0.07,0.1,0.1];
             self.radii{7} = [0.03,0.03,0.03];  
             
-            if self.debug == 1
-            % Visualise ellispoids
-            for i = 1:self.robot.model.n+1                                               % robot links + base
-                [X,Y,Z] = ellipsoid(self.centerPoint(1), self.centerPoint(2), self.centerPoint(3), self.radii{i}(1), self.radii{i}(2), self.radii{i}(3));
-                self.robot.model.points{i} = [X(:),Y(:),Z(:)];
-                warning off
-                self.robot.model.faces{i} = delaunay(self.robot.model.points{i});    
-                warning on;
-        
-                self.robot.model.plot3d([0,0,pi/4,pi/4,0,0],'noarrow','workspace',self.robot.workspace);
-            end
+            if self.debug && visualise
+                % Visualise ellispoids
+                for i = 1:self.robot.model.n+1                                               % robot links + base
+                    [X,Y,Z] = ellipsoid(self.centerPoint(1), self.centerPoint(2), self.centerPoint(3), self.radii{i}(1), self.radii{i}(2), self.radii{i}(3));
+                    self.robot.model.points{i} = [X(:),Y(:),Z(:)];
+                    warning off
+                    self.robot.model.faces{i} = delaunay(self.robot.model.points{i});    
+                    warning on;
+            
+                    self.robot.model.plot3d([0,0,pi/4,pi/4,0,0],'noarrow','workspace',self.robot.workspace);
+                end
         
             self.robot.model.plot3d([0,0,pi/4,pi/4,0,0],'noarrow','workspace',self.robot.workspace); %TODO Change workspace??
             end 
@@ -211,18 +215,24 @@ classdef Assignment2Starter < handle
             self.sugarcube.Move(transl(-0.45 ,-2.2,1.05));
 
             InitialiseRobot(self);
+            InitialiseEllipsoids(self);
           
             axis equal
             camlight
         end
 
-        function PlaceColidableItem(self, location)
+        function PlaceCollidableItem(self, location)
             try delete(self.sprayBottle); end
 %             if isempty(self.sprayBottle)
 %                 self.sprayBottle = MoveableObject('sprayBottle.ply'); % Initialise spray bottle
 %             end
             self.sprayBottle = MoveableObject('sprayBottle.ply'); % Initialise spray bottle
-            self.sprayBottle.Move(transl(location)); % [-0.2,-3.3,1]
+            self.sprayBottle.Move(transl(location));
+
+            if self.debug
+                itemPoints = self.sprayBottle.tVertices;
+                item_h = plot3(itemPoints(:,1),itemPoints(:,2),itemPoints(:,3),'b.');
+            end
         end
         
         function SimulateWarningSign(self)
@@ -307,9 +317,19 @@ classdef Assignment2Starter < handle
                     return
             end
             
-            q = self.robot.model.getpos(); % ** Change q to suit 
-            GetObject(self.robot.model, selectedTeaLocation, q, 50, self.L, self.h); % Go to the teabag location
+            qGoal = self.robot.model.getpos(); % ** Change q to suit 
+            %GetObject(self.robot.model, selectedTeaLocation, q, 50, self.L, self.h); % Go to the teabag location
             
+            qGoal = self.robot.model.ikcon(selectedTeaLocation,qGoal); 
+            self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'Set of joints to pick up teabag at ',self.L.MatrixToString(selectedTeaLocation),' = ',self.L.MatrixToString(qGoal)]};
+
+            tr = self.robot.model.fkine(qGoal);
+            self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'Checking result using fkine: ', self.L.MatrixToString(tr)]};
+
+            % TODO Add a number of tries or do a check first to see if the goal
+            % position is in collision and therefore it is impossible
+            AvoidCollisions(self.robot, self.radii, self.centerPoint, qGoal, self.sprayBottle.tVertices, self.L, self.h);
+
             %try delete(self.teaBag); end % remove after testing
             self.teaBags{self.orderCount} = MoveableObject('teabag.ply'); % Instantiate new tea bag
             self.teaBags{self.orderCount}.Move(selectedTeaLocation);
@@ -392,12 +412,11 @@ classdef Assignment2Starter < handle
             plot_sphere(coaster,0.05,'b') 
             %plot_circle(coaster,0.15,'b') %TODO fill colour
             
-            VisualServoing(self.robot.model,q0,coaster); %TODO FIX!!!!
-
-            pause
+            %VisualServoing(self.robot.model,q0,coaster); %TODO FIX!!!!
+            %pause
             
             self.cups{self.orderCount}.goalLocation = self.coasters{self.orderCount}.currentLocation;
-            RMRC(self.robot.model, self.cups{self.orderCount}, self.L, self.h);
+            RMRC(self.robot.model, self.cups{self.orderCount}, self.L, self.h, self.debug);
             %q = self.robot.model.getpos(); % ** Change q to suit
             %MoveObject(self.robot.model, self.cups{self.orderCount}, q, 50, self.L); % Pick up cup and move to coaster
 
@@ -405,6 +424,21 @@ classdef Assignment2Starter < handle
                 self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'EMERGENCY STOP']};
                 return
             end
+
+            %% Return to neutral position
+            q = [0,0,pi/4,pi/4,0,0];
+            steps = 100;
+            modelTraj = jtraj(self.robot.model.getpos,q,steps);
+        
+            for i = 1:steps
+                if self.h == true %Check for emergency stop
+                    self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'EMERGENCY STOP']};
+                    return
+                end
+                self.robot.model.animate(modelTraj(i,:));
+                drawnow()
+            end
+            
             %% Lower Barriers
             self.LowerBarriers();
 
