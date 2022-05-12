@@ -8,7 +8,7 @@ classdef Assignment2Starter < handle
         LEMON_GINGER_TEA_LOCATION = [-0.4,-1.7,1.2];
         BARRIER_HEIGHT_MIN = 1;
         BARRIER_HEIGHT_MAX = 2.5;
-        CUP_TOTAL = 4;
+        CUP_TOTAL = 3;
     end
     properties
         %Logger
@@ -86,24 +86,6 @@ classdef Assignment2Starter < handle
             location = self.cups{2}.currentLocation;
 
             GetObject(self, location, q, 100);
-
-%             q = self.calcDobot.model.ikcon(location,q); 
-%             self.L.mlog = {self.L.DEBUG,mfilename('class'),['GetObject: Set of joints to pick up object at ',self.L.MatrixToString(location),' = ',self.L.MatrixToString(q)]};
-%         
-%             tr = self.calcDobot.model.fkine(q);
-%             self.L.mlog = {self.L.DEBUG,mfilename('class'),['GetObject: Checking result using fkine: ', self.L.MatrixToString(tr)]};
-% 
-%             newQ = CalcDobotTo6Dof(q);
-%             steps = 100;
-% 
-%             calcTraj = jtraj(self.calcDobot.model.getpos,q,steps);
-%             modelTraj = jtraj(self.robot.model.getpos,newQ,steps);
-%         
-%             for i = 1:steps
-%                 self.calcDobot.model.animate(calcTraj(i,:));
-%                 self.robot.model.animate(modelTraj(i,:));
-%                 drawnow()
-%             end
 
             %% Test Collision Avoidance
 %             PlaceCollidableItem(self,[-0.9,-3,1]);
@@ -218,7 +200,6 @@ classdef Assignment2Starter < handle
             end
 
             self.cups{1}.Move(transl(-0.48,-2.5,1.12));
-            %self.cups{1}.Move(transl(-1,-3.3,1.12)*trotz(pi));
             self.cups{2}.Move(transl(-0.48,-2.7,1.12));
             self.cups{3}.Move(transl(-0.48,-2.9,1.12));
 
@@ -273,7 +254,7 @@ classdef Assignment2Starter < handle
 
         function RaiseBarriers(self)
             self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'Called']};
-            if self.frontBarrier.ZData(1,2) && self.sideBarrier.ZData(1,2) == self.BARRIER_HEIGHT_MIN
+            if self.frontBarrier.ZData(1,2) == self.BARRIER_HEIGHT_MIN && self.sideBarrier.ZData(1,2) == self.BARRIER_HEIGHT_MIN
                 for i = self.BARRIER_HEIGHT_MIN:0.01:self.BARRIER_HEIGHT_MAX
                     self.frontBarrier.ZData(:,2) = i;
                     self.sideBarrier.ZData(:,2) = i;
@@ -313,7 +294,11 @@ classdef Assignment2Starter < handle
             %q = self.qz; % ** Change q to suit
             %MoveObject(self, self.cups{self.orderCount}, q, 50); % Pick up cup and move to under water dispenser
 
+            %% Press water dispenser button 
             % TODO dispense water? Press button, water flows down to cup?
+            q = self.qz; % ** Change q to suit 
+            DispenseLiquid(self, self.WATER_LOCATION, q, 'b');
+
             if self.h == true %Check for emergency stop
                 self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'EMERGENCY STOP']};
                 return
@@ -519,6 +504,14 @@ function MoveObject(self, object, q, steps)
         object.Move(modelTr);
         drawnow()
     end
+end
+
+function DispenseLiquid(self, location, q, colour)
+    GetObject(self, transl(location), q, 50); 
+    figure(1)
+    liquid = surf([location(1,1)-0.04,location(1,1)-0.04;location(1,1)-0.04,location(1,1)-0.04],[location(1,2)-0.01,location(1,2)-0.01;location(1,2)+0.01,location(1,2)+0.01],[1,location(1,3)-0.05;1,location(1,3)-0.05],'CData',flip(imread('glass.jpg')),'FaceColor','texturemap','FaceAlpha',0.9,'EdgeColor',colour);
+    pause(3);
+    delete(liquid);
 end
 
 %% CalcDobotTo6Dof - Used to simplfy the calculations on the Dobot due to the hardware limitations of the actual Dobot
