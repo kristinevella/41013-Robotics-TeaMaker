@@ -13,6 +13,8 @@ classdef Assignment2Starter < handle
     properties
         %Logger
         L = SingleInstance.Logger;
+
+        debug;                                                          % Turn off for demo
         
         %Emergency Stop handle
         h;
@@ -42,11 +44,17 @@ classdef Assignment2Starter < handle
 
     end
     methods
-        function self = Assignment2Starter() % Constructor
+        function self = Assignment2Starter(debug) % Constructor
             close all
 
             self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'Instantiated']};
-            
+
+            if nargin < 1
+                self.debug = true;
+            else
+                self.debug = debug;
+            end
+
             self.orderCount = 1;
             SetUpEnvironment(self);
             %view([80 -70 50]); % Show full kitchen
@@ -61,11 +69,13 @@ classdef Assignment2Starter < handle
             camzoom(2);
         end
 
-        % DEBUG
+        % For testing/debug purposes only
         function TestFunction(self)
             clf
             hold on
             axis equal
+
+            self.debug = true;
             
             InitialiseRobot(self);
             
@@ -108,7 +118,7 @@ classdef Assignment2Starter < handle
             % position is in collision and therefore it is impossible
             AvoidCollisions(self.robot, self.radii, self.centerPoint, qGoal, itemPoints, self.L, self.h);
 
-            %RMRC(self.robot.model, self.cups{1}, transl(self.WATER_LOCATION), self.L);
+            %RMRC(self.robot.model, self.cups{1}, transl(self.WATER_LOCATION), self.L, self.h, self.debug);
         end
         % DEBUG END
 
@@ -130,20 +140,21 @@ classdef Assignment2Starter < handle
             self.radii{5} = [0.1,0.08,0.05];
             self.radii{6} = [0.07,0.1,0.1];
             self.radii{7} = [0.03,0.03,0.03];  
+            
+            if self.debug == 1
+            % Visualise ellispoids
+            for i = 1:self.robot.model.n+1                                               % robot links + base
+                [X,Y,Z] = ellipsoid(self.centerPoint(1), self.centerPoint(2), self.centerPoint(3), self.radii{i}(1), self.radii{i}(2), self.radii{i}(3));
+                self.robot.model.points{i} = [X(:),Y(:),Z(:)];
+                warning off
+                self.robot.model.faces{i} = delaunay(self.robot.model.points{i});    
+                warning on;
         
-%             % DEBUG - for visualising only
-%             for i = 1:self.robot.model.n+1                                               % robot links + base
-%                 [X,Y,Z] = ellipsoid(self.centerPoint(1), self.centerPoint(2), self.centerPoint(3), self.radii{i}(1), self.radii{i}(2), self.radii{i}(3));
-%                 self.robot.model.points{i} = [X(:),Y(:),Z(:)];
-%                 warning off
-%                 self.robot.model.faces{i} = delaunay(self.robot.model.points{i});    
-%                 warning on;
-%         
-%                 self.robot.model.plot3d([0,0,pi/4,pi/4,0,0],'noarrow','workspace',self.robot.workspace); %for DEBUG
-%             end
-%         
-%             self.robot.model.plot3d([0,0,pi/4,pi/4,0,0],'noarrow','workspace',self.robot.workspace); %TODO Change workspace??
-%             % DEBUG end
+                self.robot.model.plot3d([0,0,pi/4,pi/4,0,0],'noarrow','workspace',self.robot.workspace);
+            end
+        
+            self.robot.model.plot3d([0,0,pi/4,pi/4,0,0],'noarrow','workspace',self.robot.workspace); %TODO Change workspace??
+            end 
         end
 
         function SetUpEnvironment(self)
@@ -222,7 +233,7 @@ classdef Assignment2Starter < handle
 
         end
 
-        function LowerBarriers(self) %% should emergency stop stop this ?
+        function LowerBarriers(self)
             self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'Called']};
             if self.frontBarrier.ZData(1,2) && self.sideBarrier.ZData(1,2) == self.BARRIER_HEIGHT_MAX
                 for i = self.BARRIER_HEIGHT_MAX:-0.01:self.BARRIER_HEIGHT_MIN
@@ -236,7 +247,7 @@ classdef Assignment2Starter < handle
             end
         end
 
-        function RaiseBarriers(self) %% should emergency stop stop this ?
+        function RaiseBarriers(self)
             self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'Called']};
             if self.frontBarrier.ZData(1,2) && self.sideBarrier.ZData(1,2) == self.BARRIER_HEIGHT_MIN
                 for i = self.BARRIER_HEIGHT_MIN:0.01:self.BARRIER_HEIGHT_MAX
@@ -274,7 +285,7 @@ classdef Assignment2Starter < handle
             GetObject(self.robot.model, self.cups{self.orderCount}.currentLocation, q, 50, self.L, self.h); % Get a cup
             
             self.cups{self.orderCount}.goalLocation = transl(self.WATER_LOCATION);
-            RMRC(self.robot.model, self.cups{self.orderCount}, self.L, self.h);
+            RMRC(self.robot.model, self.cups{self.orderCount}, self.L, self.h, self.debug);
             %q = self.robot.model.getpos(); % ** Change q to suit
             %MoveObject(self.robot.model, self.cups{self.orderCount}, q, 50, self.L); % Pick up cup and move to under water dispenser
 
@@ -564,7 +575,7 @@ end
 % each unique trajectory to get the smoothest motion that doesn't
 % exceed limits or hit singularities
 % Resolved Motion Rate Control - Adapted from Lab9Solution_Question1
-function RMRC(model, object, L, h)
+function RMRC(model, object, L, h, debug)
     L.mlog = {L.DEBUG,mfilename('class'),['RMRC: ','Called']};
     
     if h == true %Check for emergency stop
@@ -652,9 +663,9 @@ function RMRC(model, object, L, h)
         angleError(:,i) = deltaTheta;                                           % For plotting
     end
     
-    % DEBUG
-    plot3(x(1,:),x(2,:),x(3,:),'r.','LineWidth',1);
-    % DEBUG END
+    if debug == 1
+        plot3(x(1,:),x(2,:),x(3,:),'r.','LineWidth',1);
+    end
     
     %% Do I need this for loop or can I animate in the other one? Will it make the processing time less obvious?
     for i = 1:steps
@@ -664,43 +675,43 @@ function RMRC(model, object, L, h)
         drawnow()
     end
     
-    % DEBUG
-    for i = 1:6
-        figure(2)
-        subplot(3,2,i)
-        plot(qMatrix(:,i),'k','LineWidth',1)
-        title(['Joint ', num2str(i)])
-        ylabel('Angle (rad)')
-        refline(0,model.qlim(i,1));
-        refline(0,model.qlim(i,2));
+    if debug == 1
+        for i = 1:6
+            figure(2)
+            subplot(3,2,i)
+            plot(qMatrix(:,i),'k','LineWidth',1)
+            title(['Joint ', num2str(i)])
+            ylabel('Angle (rad)')
+            refline(0,model.qlim(i,1));
+            refline(0,model.qlim(i,2));
+            
+            figure(3)
+            subplot(3,2,i)
+            plot(qdot(:,i),'k','LineWidth',1)
+            title(['Joint ',num2str(i)]);
+            ylabel('Velocity (rad/s)')
+            refline(0,0)
+        end
         
-        figure(3)
-        subplot(3,2,i)
-        plot(qdot(:,i),'k','LineWidth',1)
-        title(['Joint ',num2str(i)]);
-        ylabel('Velocity (rad/s)')
+        figure(4)
+        subplot(2,1,1)
+        plot(positionError'*1000,'LineWidth',1)
         refline(0,0)
-    end
-    
-    figure(4)
-    subplot(2,1,1)
-    plot(positionError'*1000,'LineWidth',1)
-    refline(0,0)
-    xlabel('Step')
-    ylabel('Position Error (mm)')
-    legend('X-Axis','Y-Axis','Z-Axis')
-    
-    subplot(2,1,2)
-    plot(angleError','LineWidth',1)
-    refline(0,0)
-    xlabel('Step')
-    ylabel('Angle Error (rad)')
-    legend('Roll','Pitch','Yaw')
-    figure(5)
-    plot(m,'k','LineWidth',1)
-    refline(0,epsilon)
-    title('Manipulability')
-    % DEBUG END
+        xlabel('Step')
+        ylabel('Position Error (mm)')
+        legend('X-Axis','Y-Axis','Z-Axis')
+        
+        subplot(2,1,2)
+        plot(angleError','LineWidth',1)
+        refline(0,0)
+        xlabel('Step')
+        ylabel('Angle Error (rad)')
+        legend('Roll','Pitch','Yaw')
+        figure(5)
+        plot(m,'k','LineWidth',1)
+        refline(0,epsilon)
+        title('Manipulability')
+    end 
 
 end 
 
