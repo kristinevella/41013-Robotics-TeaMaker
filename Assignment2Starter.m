@@ -23,6 +23,7 @@ classdef Assignment2Starter < handle
         robot;
         % Calc Dobot - 3DOF dobot used for calculation purposes
         calcDobot;
+        qz = [0,0,0,0];
 
         % Interactive objects
         cups; % Array of cups
@@ -39,10 +40,6 @@ classdef Assignment2Starter < handle
 
         radii;
         centerPoint;
-
-        % Flag to note if the robot should be connected to during the
-        % running of the application
-        movePhysicalDobot;
 
     end
     methods
@@ -75,54 +72,49 @@ classdef Assignment2Starter < handle
 
         % For testing/debug purposes only
         function TestFunction(self)
-            clf
-            hold on
-            axis equal
+            %clf
+            %hold on
+            %axis equal
 
             self.debug = true;
             
-            InitialiseRobot(self);
-            
-            %% Create cube - For initial collision testing only - Replace
-            % with kitchen object
+            %InitialiseRobot(self);
+            %InitialiseCalcRobot(self);
 
-%             % One side of the cube
-%             [Y,Z] = meshgrid(-0.2:0.05:0.2,-0.2:0.05:0.2);
-%             sizeMat = size(Y);
-%             X = repmat(0.2,sizeMat(1),sizeMat(2));
-%             oneSideOfCube_h = surf(X,Y,Z);
-%             
-%             % Combine one surface as a point cloud
-%             cubePoints = [X(:),Y(:),Z(:)];
-%             
-%             % Make a cube by rotating the single side by 0,90,180,270, and around y to make the top and bottom faces
-%             cubePoints = [ cubePoints ...
-%                          ; cubePoints * rotz(pi/2)...
-%                          ; cubePoints * rotz(pi) ...
-%                          ; cubePoints * rotz(3*pi/2) ...
-%                          ; cubePoints * roty(pi/2) ...
-%                          ; cubePoints * roty(-pi/2)];         
-%                      
-%             % Plot the cube's point cloud         
-%             cubeAtOigin_h = plot3(cubePoints(:,1),cubePoints(:,2),cubePoints(:,3),'r.');
-%             itemPoints = cubePoints + repmat([-1,-3,1.5],size(cubePoints,1),1);
-%             cube_h = plot3(cubePoints(:,1),cubePoints(:,2),cubePoints(:,3),'b.');
+            %% Test Calculation Robot (3-link) to displayed robot
+            q = [0,0,0,0]; %% Improve the guess TODO
+            location = self.cups{2}.currentLocation;
 
-            PlaceCollidableItem(self,[-0.9,-3,1]);
-            itemPoints = self.sprayBottle.tVertices;
-            item_h = plot3(itemPoints(:,1),itemPoints(:,2),itemPoints(:,3),'b.');
+            GetObject(self, location, q, 100);
 
-            %qGoal = self.robot.model.getpos();
-            qGoal = deg2rad([0,-134,45,45,0,0]);
+%             q = self.calcDobot.model.ikcon(location,q); 
+%             self.L.mlog = {self.L.DEBUG,mfilename('class'),['GetObject: Set of joints to pick up object at ',self.L.MatrixToString(location),' = ',self.L.MatrixToString(q)]};
+%         
+%             tr = self.calcDobot.model.fkine(q);
+%             self.L.mlog = {self.L.DEBUG,mfilename('class'),['GetObject: Checking result using fkine: ', self.L.MatrixToString(tr)]};
+% 
+%             newQ = CalcDobotTo6Dof(q);
+%             steps = 100;
+% 
+%             calcTraj = jtraj(self.calcDobot.model.getpos,q,steps);
+%             modelTraj = jtraj(self.robot.model.getpos,newQ,steps);
+%         
+%             for i = 1:steps
+%                 self.calcDobot.model.animate(calcTraj(i,:));
+%                 self.robot.model.animate(modelTraj(i,:));
+%                 drawnow()
+%             end
 
-            InitialiseEllipsoids(self)
-            %self.robot.model.animate([-1,0,0,0,0,0]);
-            
-            % TODO Add a number of tries or do a check first to see if the goal
-            % position is in collision and therefore it is impossible
-            AvoidCollisions(self.robot, self.radii, self.centerPoint, qGoal, itemPoints, self.L, self.h);
-
-            %RMRC(self.robot.model, self.cups{1}, transl(self.WATER_LOCATION), self.L, self.h, self.debug);
+            %% Test Collision Avoidance
+%             PlaceCollidableItem(self,[-0.9,-3,1]);
+%             itemPoints = self.sprayBottle.tVertices;
+%             item_h = plot3(itemPoints(:,1),itemPoints(:,2),itemPoints(:,3),'b.');         
+%             InitialiseEllipsoids(self)
+%             qGoal = deg2rad([0,-134,45,45,0,0]);
+%             AvoidCollisions(self.robot, self.radii, self.centerPoint, qGoal, itemPoints, self.L, self.h);
+             
+            %% Test RMRC
+%             RMRC(self.robot.model, self.cups{1}, transl(self.WATER_LOCATION), self.L, self.h, self.debug);
         end
         % DEBUG END
 
@@ -136,16 +128,20 @@ classdef Assignment2Starter < handle
 
         function InitialiseCalcRobot(self)
             self.L.mlog = {self.L.DEBUG, mfilename('class'),['InitialiseCalcRobot: ', 'Called"']};
-            name = ['CalcDobot',datestr(now,'yyyymmddTHHMMSSFFF')];
-            link(1) = Link([pi     0       0       pi/2    1]); % PRISMATIC Link - copied from the LinearUR5 class
-            link(1).qlim = [-1.33 0];
-            link(2) = Link('d',0.103+0.0362,    'a',0,      'alpha',-pi/2,  'offset',0, 'qlim',[deg2rad(-135),deg2rad(135)]);
-            link(3) = Link('d',0,        'a',0.135,  'alpha',0,      'offset',-pi/2, 'qlim',[deg2rad(5),deg2rad(80)]);
-            link(4) = Link('d',0,        'a',0.147,  'alpha',0,      'offset',pi/4, 'qlim',[deg2rad(-5),deg2rad(85)]);
-            CalcDobot = SerialLink(link,'name',name);
-            %workspace = [-0.4 0.4 -0.4 0.4 -0.1 0.4];
-            CalcDobot.base = CalcDobot.base *  transl(-0.7,-3.3,1.08) * trotx(pi/2);
-            %model.plot(zeros(1,4),'workspace',workspace); % Prismatic
+
+            self.calcDobot = ThreeLinkDobot(false); %% Remove plotting later? TODO
+            self.calcDobot.model.base = self.calcDobot.model.base *  transl(-0.7,-3.3,1.08) * trotx(pi/2);
+
+%             name = ['CalcDobot',datestr(now,'yyyymmddTHHMMSSFFF')];
+%             link(1) = Link([pi     0       0       pi/2    1]); % PRISMATIC Link - copied from the LinearUR5 class
+%             link(1).qlim = [-1.33 0];
+%             link(2) = Link('d',0.103+0.0362,    'a',0,      'alpha',-pi/2,  'offset',0, 'qlim',[deg2rad(-135),deg2rad(135)]);
+%             link(3) = Link('d',0,        'a',0.135,  'alpha',0,      'offset',-pi/2, 'qlim',[deg2rad(5),deg2rad(80)]);
+%             link(4) = Link('d',0,        'a',0.147,  'alpha',0,      'offset',pi/4, 'qlim',[deg2rad(-5),deg2rad(85)]);
+%             CalcDobot = SerialLink(link,'name',name);
+%             CalcDobot.base = CalcDobot.base *  transl(-0.7,-3.3,1.08) * trotx(pi/2);
+%             workspace = [-2 2 -2 2 -0.3 2];
+%             CalcDobot.plot3d(zeros(1,4),'workspace',workspace); % Prismatic
             %links need workspace to plot, however we aren't plotting this
             %robot. Commenting out.
         end
@@ -222,6 +218,7 @@ classdef Assignment2Starter < handle
             end
 
             self.cups{1}.Move(transl(-0.48,-2.5,1.12));
+            %self.cups{1}.Move(transl(-1,-3.3,1.12)*trotz(pi));
             self.cups{2}.Move(transl(-0.48,-2.7,1.12));
             self.cups{3}.Move(transl(-0.48,-2.9,1.12));
 
@@ -232,8 +229,9 @@ classdef Assignment2Starter < handle
             self.sugarcube = MoveableObject('sugarcube.ply'); 
             self.sugarcube.Move(transl(-0.45 ,-2.2,1.05));
 
-            InitialiseRobot(self);
             InitialiseCalcRobot(self);
+            figure(1) % remove later
+            InitialiseRobot(self);
             InitialiseEllipsoids(self);
           
             axis equal
@@ -257,7 +255,6 @@ classdef Assignment2Starter < handle
         function SimulateWarningSign(self)
             self.warningsign = MoveableObject('warningsign.ply'); 
             self.warningsign.Move(transl(-1,-2.3,1.2)); %warning sign simulated at hot water dispenser
-
         end
 
         function LowerBarriers(self)
@@ -308,13 +305,13 @@ classdef Assignment2Starter < handle
             end
 
             %% 1. Pickup cup and place under the water dispenser
-            q = self.robot.model.getpos(); % ** Change q to suit 
-            GetObject(self.robot.model, self.cups{self.orderCount}.currentLocation, q, 50, self.L, self.h); % Get a cup
+            q = self.qz; % ** Change q to suit 
+            GetObject(self, self.cups{self.orderCount}.currentLocation, q, 50); % Get a cup
             
-            self.cups{self.orderCount}.goalLocation = transl(self.WATER_LOCATION);
+            self.cups{self.orderCount}.goalLocation = transl(self.WATER_LOCATION) * transl(0.097,0,-0.08);
             RMRC(self.robot.model, self.cups{self.orderCount}, self.L, self.h, self.debug);
-            %q = self.robot.model.getpos(); % ** Change q to suit
-            %MoveObject(self.robot.model, self.cups{self.orderCount}, q, 50, self.L); % Pick up cup and move to under water dispenser
+            %q = self.qz; % ** Change q to suit
+            %MoveObject(self, self.cups{self.orderCount}, q, 50); % Pick up cup and move to under water dispenser
 
             % TODO dispense water? Press button, water flows down to cup?
             if self.h == true %Check for emergency stop
@@ -337,7 +334,7 @@ classdef Assignment2Starter < handle
             end
             
             qGoal = self.robot.model.getpos(); % ** Change q to suit 
-            %GetObject(self.robot.model, selectedTeaLocation, q, 50, self.L, self.h); % Go to the teabag location
+            %GetObject(self, selectedTeaLocation, q, 50); % Go to the teabag location
             
             qGoal = self.robot.model.ikcon(selectedTeaLocation,qGoal); 
             self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'Set of joints to pick up teabag at ',self.L.MatrixToString(selectedTeaLocation),' = ',self.L.MatrixToString(qGoal)]};
@@ -350,12 +347,13 @@ classdef Assignment2Starter < handle
             AvoidCollisions(self.robot, self.radii, self.centerPoint, qGoal, self.sprayBottle.tVertices, self.L, self.h);
 
             %try delete(self.teaBag); end % remove after testing
-            self.teaBags{self.orderCount} = MoveableObject('teabag.ply'); % Instantiate new tea bag
+            figure(1);                                                      %% plotted figures in other functions cause the teabag to plot on a different plot
+            self.teaBags{self.orderCount} = MoveableObject('teabag.ply');   % Instantiate new tea bag
             self.teaBags{self.orderCount}.Move(selectedTeaLocation);
 
             self.teaBags{self.orderCount}.goalLocation = self.cups{self.orderCount}.currentLocation;
-            q = self.robot.model.getpos(); % ** Change q to suit
-            MoveObject(self.robot.model, self.teaBags{self.orderCount}, q, 100, self.L, self.h); % Pick up teabag and place in cup
+            q = self.qz; % ** Change q to suit
+            MoveObject(self, self.teaBags{self.orderCount}, q, 100); % Pick up teabag and place in cup
 
             if self.h == true %Check for emergency stop
                 self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'EMERGENCY STOP']};
@@ -365,12 +363,12 @@ classdef Assignment2Starter < handle
             %% 3. Get sugar (quantity per UI) and place in cup
             if sugarQuantity > 0                                        % Done only if sugar was requested 
                 for i=1:sugarQuantity
-                    q = self.robot.model.getpos(); % ** Change q to suit 
-                    GetObject(self.robot.model, self.sugarcube.currentLocation, q, 50, self.L, self.h); % Go to the sugar canister
+                    q = self.qz; % ** Change q to suit 
+                    GetObject(self, self.sugarcube.currentLocation, q, 50); % Go to the sugar canister
                     
                     self.sugarcube.goalLocation = transl(self.cups{self.orderCount}.currentLocation);
-                    q = self.robot.model.getpos(); % ** Change q to suit
-                    MoveObject(self.robot.model, self.sugarcube, q, 100, self.L, self.h); % Pick up sugercube and place in cup
+                    q = self.qz; % ** Change q to suit
+                    MoveObject(self, self.sugarcube, q, 100); % Pick up sugercube and place in cup
 
                     if self.h == true %Check for emergency stop
                         self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'EMERGENCY STOP']};
@@ -395,13 +393,13 @@ classdef Assignment2Starter < handle
             end
 
             if milkType > 0
-                q = self.robot.model.getpos(); % ** Change q to suit 
-                GetObject(self.robot.model, self.cups{self.orderCount}.currentLocation, q, 50, self.L, self.h); % Get the cup
+                q = self.qz; % ** Change q to suit 
+                GetObject(self, self.cups{self.orderCount}.currentLocation, q, 50); % Get the cup
                 
                 self.cups{self.orderCount}.goalLocation = transl(selectedMilkLocation);
                 RMRC(self.robot.model, self.cups{self.orderCount}, self.L, self.h);
-                %q = self.robot.model.getpos(); % ** Change q to suit
-                %MoveObject(self.robot.model, self.cups{self.orderCount}, q, 100, self.L); % Pick up cup and move to under milk dispenser
+                %q = self.qz; % ** Change q to suit
+                %MoveObject(self, self.cups{self.orderCount}, q, 100); % Pick up cup and move to under milk dispenser
             end 
 
             % TODO dispense milk? Press button, milk flows down to cup?
@@ -412,7 +410,7 @@ classdef Assignment2Starter < handle
             end
 
             %% 5. Pickup cup and place on appropriate available coaster (Visual servoing part)
-            q = self.robot.model.getpos(); % ** Change q to suit 
+            q = [0,0,0,0]; % ** Change q to suit 
             %MoveToFindCoaster(self.robot.model, self.cups{self.orderCount}, q, 100, self.L); % TODO Add emergency stop check 
             MoveToFindCoaster(self.robot.model, self.cups{self.orderCount},q, 100, self.L); % TODO Add emergency stop check 
             q0 = self.robot.model.getpos(); % ** Change q to suit 
@@ -424,11 +422,11 @@ classdef Assignment2Starter < handle
             
             %Create coaster in workspace %TODO move to setup part of code
             %coaster = [-0.67;-3.6;1.08]; %TODO change later, using current position to make sure dobot can actually reach
-            coaster = [-0.67,-0.67,-0.77,-0.77;
-                    -3.6,-3.5,-3.5,-3.6;
-                     1.04,1.04,1.04,1.04];
-            figure(1)
-            plot_sphere(coaster,0.05,'b') 
+%             coaster = [-0.67,-0.67,-0.77,-0.77;
+%                     -3.6,-3.5,-3.5,-3.6;
+%                      1.04,1.04,1.04,1.04];
+%             figure(1)
+%             plot_sphere(coaster,0.05,'b') 
             %plot_circle(coaster,0.15,'b') %TODO fill colour
             
             %VisualServoing(self.robot.model,q0,coaster); %TODO FIX!!!!
@@ -436,8 +434,8 @@ classdef Assignment2Starter < handle
             
             self.cups{self.orderCount}.goalLocation = self.coasters{self.orderCount}.currentLocation;
             RMRC(self.robot.model, self.cups{self.orderCount}, self.L, self.h, self.debug);
-            %q = self.robot.model.getpos(); % ** Change q to suit
-            %MoveObject(self.robot.model, self.cups{self.orderCount}, q, 50, self.L); % Pick up cup and move to coaster
+            %q = self.qz; % ** Change q to suit
+            %MoveObject(self, self.cups{self.orderCount}, q, 50); % Pick up cup and move to coaster
 
             if self.h == true %Check for emergency stop
                 self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'EMERGENCY STOP']};
@@ -462,6 +460,8 @@ classdef Assignment2Starter < handle
             self.LowerBarriers();
 
             self.orderCount = self.orderCount + 1;
+            disp(['Order count = ', num2str(self.orderCount)]);
+            self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'Order count = ',num2str(self.orderCount)]};
 
             disp('Task 1 - Build model and environment: Complete');
             self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'Complete']};
@@ -469,56 +469,69 @@ classdef Assignment2Starter < handle
     end
 end
 
-% Moves the end effector of the robot model to a set position
-function GetObject(model, location, q, steps, L, h)
-    L.mlog = {L.DEBUG,mfilename('class'),['GetObject: ','Called']};
+%% GetObject - Moves the end effector of the robot model to a set position
+function GetObject(self, location, q, steps)
+    self.L.mlog = {self.L.DEBUG,mfilename('class'),['GetObject: ','Called']};
 
-    q = model.ikcon(location,q); 
-    L.mlog = {L.DEBUG,mfilename('class'),['GetObject: Set of joints to pick up object at ',L.MatrixToString(location),' = ',L.MatrixToString(q)]};
+    q = self.calcDobot.model.ikcon(location,q); 
+    self.L.mlog = {self.L.DEBUG,mfilename('class'),['GetObject: Set of joints to pick up object at ',self.L.MatrixToString(location),' = ',self.L.MatrixToString(q)]};
 
-    tr = model.fkine(q);
-    L.mlog = {L.DEBUG,mfilename('class'),['GetObject: Checking result using fkine: ', L.MatrixToString(tr)]};
+    tr = self.calcDobot.model.fkine(q);
+    self.L.mlog = {self.L.DEBUG,mfilename('class'),['GetObject: Checking result using fkine: ', self.L.MatrixToString(tr)]};
 
-    modelTraj = jtraj(model.getpos,q,steps);
+    newQ = CalcDobotTo6Dof(q);
+
+    %calcTraj = jtraj(self.calcDobot.model.getpos,q,steps); % Remove TODO
+    modelTraj = jtraj(self.robot.model.getpos,newQ,steps);
 
     for i = 1:steps
-        if h == true %Check for emergency stop
-            L.mlog = {L.DEBUG,mfilename('class'),['GetObject: ','EMERGENCY STOP']};
+        if self.h == true %Check for emergency stop
+            self.L.mlog = {self.L.DEBUG,mfilename('class'),['GetObject: ','EMERGENCY STOP']};
             return
         end
-        model.animate(modelTraj(i,:));
+        %self.calcDobot.model.animate(calcTraj(i,:)); % Remove TODO
+        self.robot.model.animate(modelTraj(i,:));
         drawnow()
     end
 end
 
-% Moves the object with the robot end effector to a set location
-function MoveObject(model, object, q, steps, L, h)
-    L.mlog = {L.DEBUG,mfilename('class'),['MoveObject: ','Called']};
+%% MoveObject - Moves the object with the robot end effector to a set location
+function MoveObject(self, object, q, steps)
+    self.L.mlog = {self.L.DEBUG,mfilename('class'),['MoveObject: ','Called']};
 
-    q = model.ikcon(object.goalLocation,q)
-    L.mlog = {L.DEBUG,mfilename('class'),['MoveObject: Set of joints to move object to ',L.MatrixToString(object.goalLocation),' = ',L.MatrixToString(q)]};
+    q = self.calcDobot.model.ikcon(object.goalLocation,q); 
+    self.L.mlog = {self.L.DEBUG,mfilename('class'),['MoveObject: Set of joints to pick up object at ',self.L.MatrixToString(object.goalLocation),' = ',self.L.MatrixToString(q)]};
 
-    tr = model.fkine(q)
-    L.mlog = {L.DEBUG,mfilename('class'),['MoveObject: Checking result using fkine: ', L.MatrixToString(tr)]};
+    tr = self.calcDobot.model.fkine(q);
+    self.L.mlog = {self.L.DEBUG,mfilename('class'),['MoveObject: Checking result using fkine: ', self.L.MatrixToString(tr)]};
 
-    modelTraj = jtraj(model.getpos,q,steps);
+    newQ = CalcDobotTo6Dof(q);
+    
+    modelTraj = jtraj(self.robot.model.getpos,newQ,steps);
+
     for i = 1:steps
-        if h == true %Check for emergency stop
-            L.mlog = {L.DEBUG,mfilename('class'),['MoveObject: ','EMERGENCY STOP']};
+        if self.h == true %Check for emergency stop
+            self.L.mlog = {self.L.DEBUG,mfilename('class'),['MoveObject: ','EMERGENCY STOP']};
             return
         end
-        model.animate(modelTraj(i,:));
-        modelTr = model.fkine(modelTraj(i,:));
+        self.robot.model.animate(modelTraj(i,:));
+        modelTr = self.robot.model.fkine(modelTraj(i,:));
         object.Move(modelTr);
         drawnow()
     end
-
-%     if self.movePhysicalDobot
-%         self.MoveRobot(modelTraj,L,h)
-%     end
 end
 
-% Collision Avoidance - derrived from Lab6Solution
+%% CalcDobotTo6Dof - Used to simplfy the calculations on the Dobot due to the hardware limitations of the actual Dobot
+function plotQ = CalcDobotTo6Dof(CalcDobotQ)
+    plotQ = zeros(1,6);
+    plotQ(1) = CalcDobotQ(1);
+    plotQ(2) = CalcDobotQ(2);
+    plotQ(3) = CalcDobotQ(3);
+    plotQ(4) = CalcDobotQ(4);
+    plotQ(5) = pi/2 - CalcDobotQ(4) - CalcDobotQ(3);
+end
+
+%% Collision Detection - derrived from Lab6Solution
 function result = IsCollision(robot, radii, centerPoint, qMatrix, points, L, h)
     L.mlog = {L.DEBUG,mfilename('class'),['IsCollision: ','Called']};
 
@@ -561,8 +574,7 @@ function result = IsCollision(robot, radii, centerPoint, qMatrix, points, L, h)
     end
 end
     
-% Collision Avoidance - derrived from Lab6Solution
-% From current position to goal position
+%% Collision Avoidance - derrived from Lab6Solution (From current position to goal position)
 function AvoidCollisions(robot, radii, centerPoint, qGoal, points, L, h)
     L.mlog = {L.DEBUG,mfilename('class'),['AvoidCollisions: ','Called']};
 
@@ -612,6 +624,7 @@ function AvoidCollisions(robot, radii, centerPoint, qGoal, points, L, h)
 
 end 
 
+%% WithinLimits - Function to determine if a set of joint angles is within the robot's joint limits
 function result = WithinLimits(robot, q)
     result = true;
     for i=1:robot.model.n
@@ -625,7 +638,7 @@ end
 % TODO: Need to change initial parameters in RMRC each time depending on
 % each unique trajectory to get the smoothest motion that doesn't
 % exceed limits or hit singularities
-% Resolved Motion Rate Control - Adapted from Lab9Solution_Question1
+%% Resolved Motion Rate Control - Adapted from Lab9Solution_Question1
 function RMRC(model, object, L, h, debug)
     L.mlog = {L.DEBUG,mfilename('class'),['RMRC: ','Called']};
     
@@ -661,12 +674,13 @@ function RMRC(model, object, L, h, debug)
         x(2,i) = (1-s(i))*T(2,4) + s(i)*object.goalLocation(2,4); % Points in y
         x(3,i) = (1-s(i))*T(3,4) + s(i)*object.goalLocation(3,4); % Points in z
         % Maintain downwards facing
-        theta(1,i) = pi;                 % Roll angle 
-        theta(2,i) = 0;                  % Pitch angle
-        theta(3,i) = pi;                 % Yaw angle
+        theta(1,i) = 0;             % Roll angle 
+        theta(2,i) = 0;                % Pitch angle
+        theta(3,i) = 0;              % Yaw angle
     end
      
-    T = [rpy2r(theta(1,1),theta(2,1),theta(3,1)) x(:,1);zeros(1,3) 1];          % Create transformation of first point and angle
+    %T = [rpy2r(theta(1,1),theta(2,1),theta(3,1)) x(:,1);zeros(1,3) 1];          % Create transformation of first point and angle
+    T = [T(1:3,1:3) x(:,1); zeros(1,3) 1];  % Keeps rpy same as current pos 
     q0 = zeros(1,6);                                                            % Initial guess for joint angles
     qMatrix(1,:) = model.ikcon(T,q0);                                           % Solve joint angles to achieve first waypoint
     
@@ -766,7 +780,7 @@ function RMRC(model, object, L, h, debug)
 
 end 
 
-%Moves robot with object to ideal starting position to start visual servoing
+%% Moves robot with object to ideal starting position to start visual servoing
 function MoveToFindCoaster(model, object, q, steps, L)
     L.mlog = {L.DEBUG,mfilename('class'),['MoveToFindCoaster: ','Called']};
 
@@ -781,7 +795,7 @@ function MoveToFindCoaster(model, object, q, steps, L)
     end
 end
 
-%Visual servoing code to find coaster
+%% Visual servoing code to find coaster
 function VisualServoing(model,q0,coaster) %adapted from Lab 8 visual servoing code
             % Create image target (coaster in the centre of the image plane)           
             coasterStar = [800 200 200 800; 300 300 800 800];
@@ -927,8 +941,7 @@ function VisualServoing(model,q0,coaster) %adapted from Lab 8 visual servoing co
 end
 
 %% Functions for plotting (From Lab 8 Solution)
-
- function plot_p(history,uv_star,camera)
+function plot_p(history,uv_star,camera)
     %VisualServo.plot_p Plot feature trajectory
     %
     % VS.plot_p() plots the feature values versus time.
@@ -1058,7 +1071,6 @@ end
 %
 % *Returns:* 
 % _algebraicDist_ (many*1 double) algebraic distance for the ellipsoid
-
 function algebraicDist = GetAlgebraicDist(points, centerPoint, radii)
     algebraicDist = ((points(:,1)-centerPoint(1))/radii(1)).^2 ...
               + ((points(:,2)-centerPoint(2))/radii(2)).^2 ...
@@ -1092,95 +1104,27 @@ end
 %% InterpolateWaypointRadians - from Lab5_Solution_Question2and3
 % Given a set of waypoints, finely intepolate them
 function qMatrix = InterpolateWaypointRadians(waypointRadians,maxStepRadians)
-if nargin < 2
-    maxStepRadians = deg2rad(1);
-end
-
-qMatrix = [];
-for i = 1: size(waypointRadians,1)-1
-    qMatrix = [qMatrix ; FineInterpolation(waypointRadians(i,:),waypointRadians(i+1,:),maxStepRadians)]; %#ok<AGROW>
-end
+    if nargin < 2
+        maxStepRadians = deg2rad(1);
+    end
+    
+    qMatrix = [];
+    for i = 1: size(waypointRadians,1)-1
+        qMatrix = [qMatrix ; FineInterpolation(waypointRadians(i,:),waypointRadians(i+1,:),maxStepRadians)]; %#ok<AGROW>
+    end
 end
 
 %% FineInterpolation - from Lab5_Solution_Question2and3
 % Use results from Q2.6 to keep calling jtraj until all step sizes are
 % smaller than a given max steps size
 function qMatrix = FineInterpolation(q1,q2,maxStepRadians)
-if nargin < 3
-    maxStepRadians = deg2rad(1);
-end
-    
-steps = 2;
-while ~isempty(find(maxStepRadians < abs(diff(jtraj(q1,q2,steps))),1))
-    steps = steps + 1;
-end
-qMatrix = jtraj(q1,q2,steps);
-end
-
-%% Move Robot - Implemented from Canvas https://github.com/gapaul/dobot_magician_driver/wiki/Instructions-For-Native-Linux
-
-function MoveRobot(modelTraj, L, h)
-    % ROS Initialisation
-    rosinit;
-
-    % Setup safety status subscriber. Used to cancel robot connection of
-    % robot cannot be moved
-    safetyStatusSubscriber = rossubscriber('/dobot_magician/safety_status');
-    
-    % Initialise the Dobot
-    [safetyStatePublisher,safetyStateMsg] = rospublisher('/dobot_magician/target_safety_status');
-    safetyStateMsg.Data = 2;
-    send(safetyStatePublisher,safetyStateMsg);
-
-    % Start the target joing state publisher
-    [targetJointTrajPub,targetJointTrajMsg] = rospublisher('/dobot_magician/target_joint_states');
-    trajectoryPoint = rosmessage("trajectory_msgs/JointTrajectoryPoint");
-
-    % Allow some time for MATLAB to start the subscribers and to initialise
-    pause(2);
-
-    % Given the modelTraj from the MoveObject function, 
-    steps = length(modelTraj);
-
-    actualTraj = zeros(steps,4);
-    actualTraj(:,1) = modelTraj(:,2);
-    actualTraj(:,2) = modelTraj(:,3);
-    actualTraj(:,3) = modelTraj(:,4) - pi/2 + modelTraj(:,3);
-    actualTraj(:,4) = modelTraj(:,6);
-
-    for i = 1:steps
-        if h == true %Check for emergency stop
-            safetyStateMsg.Data = 2;
-            send(safetyStatePublisher,safetyStateMsg);
-            L.mlog = {L.DEBUG,mfilename('class'),['MoveRobot: ','EMERGENCY STOP']};
-            return
-        end
-
-        currentSafetyStatus = safetyStatusSubscriber.LatestMessage.Data;
-        if currentSafetyStatus ~= 4 %Check if the dobot is operable
-            safetyStateMsg.Data = 2;
-            send(safetyStatePublisher,safetyStateMsg);
-            L.mlog = {L.DEBUG,mfilename('class'),['MoveRobot: ','Robot not OPERATING']};
-            return
-        end
-
-        % Pull the joint states from the actualTraj, and publish that data
-        % to the Dobot
-        trajectoryPoint.Positions = actualTraj(i,:);
-        targetJointTrajMsg.Points = trajectoryPoint;
-        send(targetJointTrajPub,targetJointTrajMsg);
+    if nargin < 3
+        maxStepRadians = deg2rad(1);
     end
-
-    % Close the ROS connection / node
-    rosshutdown;
-end
-
-%% CalcDobotTo6Dof - Used to simplfy the calculations on the Dobot due to the hardware limitations of the actual Dobot
-function plotQ = CalcDobotTo6Dof(CalcDobotQ)
-    plotQ = zeros(1,6);
-    plotQ(1) = CalcDobotQ(1);
-    plotQ(2) = CalcDobotQ(2);
-    plotQ(3) = CalcDobotQ(3);
-    plotQ(4) = CalcDobotQ(4);
-    plotQ(5) = pi/2 - CalcDobotQ(4) - CalcDobot(3);
+        
+    steps = 2;
+    while ~isempty(find(maxStepRadians < abs(diff(jtraj(q1,q2,steps))),1))
+        steps = steps + 1;
+    end
+    qMatrix = jtraj(q1,q2,steps);
 end
