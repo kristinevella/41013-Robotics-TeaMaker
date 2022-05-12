@@ -192,25 +192,23 @@ classdef Assignment2Starter < handle
             PlaceObject('teaContainer_Green.ply',self.GREEN_TEA_LOCATION);
             PlaceObject('teaContainer_LemonAndGinger.ply',self.LEMON_GINGER_TEA_LOCATION);
 
-            PlaceObject('sugarcontainer.ply',[-1.2,-3.5,1]); %% TODO Move (out of reach)
+            PlaceObject('sugarcontainer.ply',[-0.45 ,-2.2,1.04]); %% TODO Move (out of reach)
         
             for i = 1:self.CUP_TOTAL
                 self.cups{i} = MoveableObject('cup.ply');
                 self.coasters{i} = MoveableObject('coaster.ply');
             end
 
-            self.cups{1}.Move(transl(-0.4,-2.5,1.12));
-            self.cups{2}.Move(transl(-0.4,-2.7,1.12));
-            self.cups{3}.Move(transl(-0.4,-2.9,1.12));
-            self.cups{4}.Move(transl(-0.4,-3.1,1.12));
+            self.cups{1}.Move(transl(-0.48,-2.5,1.12));
+            self.cups{2}.Move(transl(-0.48,-2.7,1.12));
+            self.cups{3}.Move(transl(-0.48,-2.9,1.12));
 
-            self.coasters{1}.Move(transl(-0.20,-3.6,1.04));
-            self.coasters{2}.Move(transl(-0.45,-3.6,1.04));
-            self.coasters{3}.Move(transl(-0.70,-3.6,1.04));
-            self.coasters{4}.Move(transl(-0.95,-3.6,1.04));
+            self.coasters{1}.Move(transl(-0.5,-3.6,1.04));
+            self.coasters{2}.Move(transl(-0.70,-3.6,1.04));
+            self.coasters{3}.Move(transl(-0.9,-3.6,1.04));
 
             self.sugarcube = MoveableObject('sugarcube.ply'); 
-            self.sugarcube.Move(transl(-1.2,-3.5,1.05));
+            self.sugarcube.Move(transl(-0.45 ,-2.2,1.05));
 
             InitialiseRobot(self);
           
