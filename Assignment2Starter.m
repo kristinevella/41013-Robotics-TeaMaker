@@ -29,6 +29,7 @@ classdef Assignment2Starter < handle
         sprayBottle;
         sideBarrier;
         frontBarrier;
+        warningsign;
 
         orderCount;
 
@@ -213,6 +214,12 @@ classdef Assignment2Starter < handle
 %             end
             self.sprayBottle = MoveableObject('sprayBottle.ply'); % Initialise spray bottle
             self.sprayBottle.Move(transl(location)); % [-0.2,-3.3,1]
+        end
+        
+        function SimulateWarningSign(self)
+            self.warningsign = MoveableObject('warningsign.ply'); 
+            self.warningsign.Move(transl(-1,-2.3,1.2)); %warning sign simulated at hot water dispenser
+
         end
 
         function LowerBarriers(self) %% should emergency stop stop this ?
