@@ -290,9 +290,9 @@ classdef Assignment2Starter < handle
             GetObject(self, self.cups{self.orderCount}.currentLocation, q, 50); % Get a cup
             
             self.cups{self.orderCount}.goalLocation = transl(self.WATER_LOCATION) * transl(0.097,0,-0.08);
-            RMRC(self.robot.model, self.cups{self.orderCount}, self.L, self.h, self.debug);
-            %q = self.qz; % ** Change q to suit
-            %MoveObject(self, self.cups{self.orderCount}, q, 50); % Pick up cup and move to under water dispenser
+            %RMRC(self.robot.model, self.cups{self.orderCount}, self.L, self.h, self.debug);
+            q = self.qz; % ** Change q to suit
+            MoveObject(self, self.cups{self.orderCount}, q, 50); % Pick up cup and move to under water dispenser
 
             %% Press water dispenser button 
             % TODO dispense water? Press button, water flows down to cup?
@@ -501,6 +501,7 @@ function MoveObject(self, object, q, steps)
         end
         self.robot.model.animate(modelTraj(i,:));
         modelTr = self.robot.model.fkine(modelTraj(i,:));
+        modelTr(1:3,1:3) = eye(3); %Don't change object's rotation
         object.Move(modelTr);
         drawnow()
     end
