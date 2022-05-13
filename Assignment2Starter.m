@@ -491,6 +491,7 @@ function MoveObject(self, object, q, steps, endEffector)
     newQ = CalcDobotTo6Dof(q, endEffector);
     
     modelTraj = jtraj(self.robot.model.getpos,newQ,steps);
+    objectRotationTraj = (1/endEffector):((endEffector-(1/endEffector))/steps):endEffector;
 
     for i = 1:steps
         if self.h == true %Check for emergency stop
@@ -499,7 +500,7 @@ function MoveObject(self, object, q, steps, endEffector)
         end
         self.robot.model.animate(modelTraj(i,:));
         modelTr = self.robot.model.fkine(modelTraj(i,:));
-        R = trotz(endEffector);
+        R = trotz(objectRotationTraj(i));
         modelTr(1:3,1:3) = eye(3)*R(1:3,1:3); %Don't change object's rotation
         object.Move(modelTr);
         drawnow()
