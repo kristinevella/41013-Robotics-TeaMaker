@@ -26,7 +26,10 @@ classdef Assignment2Starter < handle
         qz = [0,0,0,0];
 
         % Interactive objects
-        cups; % Array of cups
+        emptyCups; % Array of cups
+        waterCups;
+        teaCups;
+        milkCups;
         coasters; % Array of coasters
         teaBags;
         sugarcube;
@@ -83,7 +86,7 @@ classdef Assignment2Starter < handle
 
             %% Test Calculation Robot (3-link) to displayed robot
             q = [0,0,0,0]; %% Improve the guess TODO
-            location = self.cups{2}.currentLocation;
+            location = self.emptyCups{2}.currentLocation;
 
             GetObject(self, location, q, 100);
 
@@ -113,19 +116,6 @@ classdef Assignment2Starter < handle
 
             self.calcDobot = ThreeLinkDobot(false); %% Remove plotting later? TODO
             self.calcDobot.model.base = self.calcDobot.model.base *  transl(-0.7,-3.3,1.08) * trotx(pi/2);
-
-%             name = ['CalcDobot',datestr(now,'yyyymmddTHHMMSSFFF')];
-%             link(1) = Link([pi     0       0       pi/2    1]); % PRISMATIC Link - copied from the LinearUR5 class
-%             link(1).qlim = [-1.33 0];
-%             link(2) = Link('d',0.103+0.0362,    'a',0,      'alpha',-pi/2,  'offset',0, 'qlim',[deg2rad(-135),deg2rad(135)]);
-%             link(3) = Link('d',0,        'a',0.135,  'alpha',0,      'offset',-pi/2, 'qlim',[deg2rad(5),deg2rad(80)]);
-%             link(4) = Link('d',0,        'a',0.147,  'alpha',0,      'offset',pi/4, 'qlim',[deg2rad(-5),deg2rad(85)]);
-%             CalcDobot = SerialLink(link,'name',name);
-%             CalcDobot.base = CalcDobot.base *  transl(-0.7,-3.3,1.08) * trotx(pi/2);
-%             workspace = [-2 2 -2 2 -0.3 2];
-%             CalcDobot.plot3d(zeros(1,4),'workspace',workspace); % Prismatic
-            %links need workspace to plot, however we aren't plotting this
-            %robot. Commenting out.
         end
 
         function InitialiseEllipsoids(self)
@@ -195,13 +185,13 @@ classdef Assignment2Starter < handle
             PlaceObject('sugarcontainer.ply',[-0.45 ,-2.2,1.04]); %% TODO Move (out of reach)
         
             for i = 1:self.CUP_TOTAL
-                self.cups{i} = MoveableObject('cup.ply');
+                self.emptyCups{i} = MoveableObject('cup.ply');
                 self.coasters{i} = MoveableObject('coaster.ply');
             end
 
-            self.cups{1}.Move(transl(-0.48,-2.5,1.12));
-            self.cups{2}.Move(transl(-0.48,-2.7,1.12));
-            self.cups{3}.Move(transl(-0.48,-2.9,1.12));
+            self.emptyCups{1}.Move(transl(-0.48,-2.5,1.12));
+            self.emptyCups{2}.Move(transl(-0.48,-2.7,1.12));
+            self.emptyCups{3}.Move(transl(-0.48,-2.9,1.12));
 
             self.coasters{1}.Move(transl(-0.9,-3.6,1.04));
             self.coasters{2}.Move(transl(-0.5,-3.6,1.04));
@@ -289,17 +279,22 @@ classdef Assignment2Starter < handle
 
             %% 1. Pickup cup and place under the water dispenser
             q = self.qz; % ** Change q to suit 
-            GetObject(self, self.cups{self.orderCount}.currentLocation, q, 50); % Get a cup
+            GetObject(self, self.emptyCups{self.orderCount}.currentLocation, q, 50); % Get a cup
             
-            self.cups{self.orderCount}.goalLocation = transl(-1,-2.3,1.28); %transl(self.WATER_LOCATION);
+            self.emptyCups{self.orderCount}.goalLocation = transl(-1,-2.3,1.28); %transl(self.WATER_LOCATION);
             %RMRC(self.robot.model, self.cups{self.orderCount}, self.L, self.h, self.debug);
             q = self.qz; % ** Change q to suit
-            MoveObject(self, self.cups{self.orderCount}, q, 50, pi); % Pick up cup and move to under water dispenser
+            MoveObject(self, self.emptyCups{self.orderCount}, q, 50, pi); % Pick up cup and move to under water dispenser
 
             %% Press water dispenser button 
             % TODO dispense water? Press button, water flows down to cup?
             q = self.qz; % ** Change q to suit 
             DispenseLiquid(self, [-1,-2.35,1.3], q, 'b'); %%check
+            
+            %figure(1);                                                      %% plotted figures in other functions cause the teabag to plot on a different plot
+            self.waterCups{self.orderCount} = MoveableObject('cupwithwater.ply');   
+            self.waterCups{self.orderCount}.Move(self.emptyCups{self.orderCount}.currentLocation);
+            self.emptyCups{self.orderCount}.Move(transl(0,0,0));  %% delete function didn't work - TODO delete 
 
             if self.h == true %Check for emergency stop
                 self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'EMERGENCY STOP']};
@@ -332,15 +327,21 @@ classdef Assignment2Starter < handle
             AvoidCollisions(self.calcDobot, self.robot, self.radii, self.centerPoint, qGoal, self.sprayBottle.tVertices, self.L, self.h);
 
             %try delete(self.teaBag); end % remove after testing
-            figure(1);                                                      %% plotted figures in other functions cause the teabag to plot on a different plot
+            %figure(1);                                                      %% plotted figures in other functions cause the teabag to plot on a different plot
             self.teaBags{self.orderCount} = MoveableObject('teabag.ply');   % Instantiate new tea bag
             self.teaBags{self.orderCount}.Move(selectedTeaLocation);
 
-            self.teaBags{self.orderCount}.goalLocation = self.cups{self.orderCount}.currentLocation;
+            self.teaBags{self.orderCount}.goalLocation = self.waterCups{self.orderCount}.currentLocation;
             q = self.qz; % ** Change q to suit
             MoveObject(self, self.teaBags{self.orderCount}, q, 100, 0); % Pick up teabag and place in cup
 
+            %figure(1);                                                      %% plotted figures in other functions cause the teabag to plot on a different plot
+            self.teaCups{self.orderCount} = MoveableObject('cupwithtea.ply');   
+            self.teaCups{self.orderCount}.Move(self.waterCups{self.orderCount}.currentLocation);
+            self.waterCups{self.orderCount}.Move(transl(0,0,0));
+
             %% TODO what do we do with the tea bag now? does it stay in the cup and follow or do we just delete it?
+            self.teaBags{self.orderCount}.Move(transl(0,0,0));
 
             if self.h == true %Check for emergency stop
                 self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'EMERGENCY STOP']};
@@ -353,7 +354,7 @@ classdef Assignment2Starter < handle
                     q = self.qz; % ** Change q to suit 
                     GetObject(self, self.sugarcube.currentLocation, q, 50); % Go to the sugar canister
                     
-                    self.sugarcube.goalLocation = transl(self.cups{self.orderCount}.currentLocation);
+                    self.sugarcube.goalLocation = transl(self.teaCups{self.orderCount}.currentLocation);
                     q = self.qz; % ** Change q to suit
                     MoveObject(self, self.sugarcube, q, 100, 0); % Pick up sugercube and place in cup
 
@@ -384,15 +385,19 @@ classdef Assignment2Starter < handle
             %% Need to add way points so it doesn't go through the containers
             if milkType > 0
                 q = self.qz; % ** Change q to suit 
-                GetObject(self, self.cups{self.orderCount}.currentLocation, q, 50); % Get the cup
+                GetObject(self, self.teaCups{self.orderCount}.currentLocation, q, 50); % Get the cup
                 
-                self.cups{self.orderCount}.goalLocation = transl(selectedMilkLocation);
+                self.teaCups{self.orderCount}.goalLocation = transl(selectedMilkLocation);
                 %RMRC(self.calcDobot.model, self.robot.model, self.cups{self.orderCount}, self.L, self.h, self.debug);
                 q = self.qz; % ** Change q to suit
-                MoveObject(self, self.cups{self.orderCount}, q, 100, 0); % Pick up cup and move to under milk dispenser
+                MoveObject(self, self.teaCups{self.orderCount}, q, 100, 0); % Pick up cup and move to under milk dispenser
 
                 % TODO dispense milk? Press button, milk flows down to cup?
                 DispenseLiquid(self, location, q, 'w'); %%check
+
+                self.milkCups{self.orderCount} = MoveableObject('cupwithmilktea.ply');   
+                self.milkCups{self.orderCount}.Move(self.teaCups{self.orderCount}.currentLocation);
+                self.teaCups{self.orderCount}.Move(transl(0,0,0));
             end 
 
             if self.h == true %Check for emergency stop
@@ -402,7 +407,7 @@ classdef Assignment2Starter < handle
 
             %% 5. Pickup cup and place on appropriate available coaster (Visual servoing part)
             q = self.qz; % ** Change q to suit 
-            GetObject(self, self.cups{self.orderCount}.currentLocation, q, 50);
+            GetObject(self, self.milkCups{self.orderCount}.currentLocation, q, 50);
             
             %MoveToFindCoaster(self.robot.model, self.cups{self.orderCount}, q, 100, self.L); % TODO Add emergency stop check 
             %MoveToFindCoaster(self.robot.model, self.cups{self.orderCount},q, 100, self.L); % TODO Add emergency stop check 
@@ -425,10 +430,10 @@ classdef Assignment2Starter < handle
             %VisualServoing(self.robot.model,q0,coaster); %TODO FIX!!!!
             %pause
             
-            self.cups{self.orderCount}.goalLocation = transl(-0.9,-3.7,1.3); %self.coasters{self.orderCount}.currentLocation;
+            self.milkCups{self.orderCount}.goalLocation = transl(-0.9,-3.7,1.3); %self.coasters{self.orderCount}.currentLocation;
             %RMRC(self.calcDobot.model, self.robot.model, self.cups{self.orderCount}, self.L, self.h, self.debug);
             q = self.qz; % ** Change q to suit
-            MoveObject(self, self.cups{self.orderCount}, q, 50, -pi); % Pick up cup and move to coaster
+            MoveObject(self, self.milkCups{self.orderCount}, q, 50, -pi); % Pick up cup and move to coaster
 
             if self.h == true %Check for emergency stop
                 self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'EMERGENCY STOP']};
