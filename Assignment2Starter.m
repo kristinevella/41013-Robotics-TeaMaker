@@ -83,6 +83,7 @@ classdef Assignment2Starter < handle
             GetSugar(self, self.qz, sugarQuantity);
             GetMilk(self, self.qz, milkType);
             FindCoaster(self, milkType);
+            StirTea(self);
             ResetPosition(self);
 
             if self.h == true %Check for emergency stop
@@ -432,6 +433,40 @@ classdef Assignment2Starter < handle
             end
         end
         
+        %% StirTea
+        function StirTea(self)
+            self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'Called']};
+            if self.h == true %Check for emergency stop
+                self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'EMERGENCY STOP']};
+                return
+            end
+            GetObject(self, self.cups{self.orderCount}.currentLocation*transl(0,0,0.2), self.qz, 50);
+            rmrc = ResolvedMotionRateControl(self.calcDobot,self.robot.model,self.debug,self.h); % TODO add logging in the class
+            if self.debug
+                line_h1 = plot3(rmrc.x(1,:),rmrc.x(2,:),rmrc.x(3,:),'r.','LineWidth',1);
+            end
+            x = zeros(3,rmrc.steps/2);
+            for i = 1:2:rmrc.steps %Skip every second to increase speed of animation
+                if self.h == true %Check for emergency stop
+                    self.L.mlog = {self.L.DEBUG,mfilename('class'),['RMRC: ','EMERGENCY STOP']};
+                    return
+                end
+                newQ = CalcDobotTo6Dof(rmrc.qMatrix(i,:),0);
+                self.robot.model.animate(newQ);
+                modelTr = self.robot.model.fkine(newQ);
+                %modelTr(1:3,1:3) = eye(3); %Don't change object's rotation
+                %object.Move(modelTr); %TODO spoon or stiring stick?
+                x(1:3,i) = modelTr(1:3,4)'; % for plotting
+                drawnow()
+            end
+            if self.debug
+                line_h2 = plot3(x(1,:),x(2,:),x(3,:),'b.','LineWidth',1);
+            end
+%             pause
+%             try delete(line_h1); end
+%             try delete(line_h1); end
+        end
+
         %% ResetPosition
         function ResetPosition(self)
             self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'Called']};
@@ -544,7 +579,7 @@ classdef Assignment2Starter < handle
         end
 
         %% TestFunction - For testing/debug purposes only
-        function TestFunction(self)
+        function TestFunction(self, testOption)
             %clf
             %hold on
             %axis equal
@@ -554,22 +589,25 @@ classdef Assignment2Starter < handle
             %InitialiseRobot(self);
             %InitialiseCalcRobot(self);
 
-            %% Test Calculation Robot (3-link) to displayed robot
-            q = [0,0,0,0]; %% Improve the guess TODO
-            location = self.cups{2}.currentLocation;
-
-            GetObject(self, location, q, 100);
-
-            %% Test Collision Avoidance
-%             PlaceCollidableItem(self,[-0.9,-3,1]);
-%             itemPoints = self.sprayBottle.tVertices;
-%             item_h = plot3(itemPoints(:,1),itemPoints(:,2),itemPoints(:,3),'b.');         
-%             InitialiseEllipsoids(self)
-%             qGoal = deg2rad([0,-134,45,45,0,0]);
-%             AvoidCollisions(self.robot, self.radii, self.centerPoint, qGoal, itemPoints, self.L, self.h);
-             
-            %% Test RMRC
-%             RMRC(self.robot.model, self.cups{1}, transl(self.WATER_LOCATION), self.L, self.h, self.debug);
+            switch testOption
+                case 1                                                      % Test Calculation Robot (3-link) to displayed robot
+                    q = [0,0,0,0];
+                    location = self.cups{2}.currentLocation;
+                    GetObject(self, location, q, 100);
+                case 2                                                      %Test Collision Avoidance
+                    PlaceCollidableItem(self,[-0.9,-3,1]);
+                    itemPoints = self.sprayBottle.tVertices;
+                    item_h = plot3(itemPoints(:,1),itemPoints(:,2),itemPoints(:,3),'b.');         
+                    InitialiseEllipsoids(self)
+                    qGoal = deg2rad([0,-134,45,45,0,0]);
+                    AvoidCollisions(self.robot, self.radii, self.centerPoint, qGoal, itemPoints, self.L, self.h);
+                case 3                                                      % Test RMRC
+                    StirTea(self);
+                    %RMRC(self.robot.model, self.cups{1}, transl(self.WATER_LOCATION), self.L, self.h, self.debug);
+                case 4
+                    % @Sam, add your visual servoing code here to test and
+                    % call a.TestFunction(4)
+            end
         end
     end
 end
@@ -701,167 +739,6 @@ function result = WithinLimits(robot, q)
         end
     end
 end
-
-%% Resolved Motion Rate Control - Adapted from Lab9Solution_Question1
-function RMRC(calcModel, model, object, L, h, debug)
-    L.mlog = {L.DEBUG,mfilename('class'),['RMRC: ','Called']};
-    
-    if h == true %Check for emergency stop
-        L.mlog = {L.DEBUG,mfilename('class'),['RMRC: ','EMERGENCY STOP']};
-        return
-    end
-    
-    % Set parameters for the simulation
-    t = 5;             % Total time (s)
-    deltaT = 0.02;      % Control frequency
-    steps = t/deltaT;   % No. of steps for simulation
-    delta = 2*pi/steps; % Small angle change
-    epsilon = 0.1;      % Threshold value for manipulability/Damped Least Squares
-    W = diag([1 1 1 0.1 0.1 0.1]);    % Weighting matrix for the velocity vector (More emphasis on linear than angular here)
-    
-    % Allocate array data
-    m = zeros(steps,1);             % Array for Measure of Manipulability
-    qMatrix = zeros(steps,4);       % Array for joint anglesR
-    qdot = zeros(steps,4);          % Array for joint velocities
-    theta = zeros(3,steps);         % Array for roll-pitch-yaw angles
-    x = zeros(3,steps);             % Array for x-y-z trajectory
-    positionError = zeros(3,steps); % For plotting trajectory error
-    angleError = zeros(3,steps);    % For plotting trajectory error
-    
-    q = model.getpos();
-    q = q(1,1:4);
-    T = calcModel.fkine(q);
-    
-    % Set up trajectory, initial pose
-    s = lspb(0,1,steps);                % Trapezoidal trajectory scalar
-    for i=1:steps
-        x(1,i) = (1-s(i))*T(1,4) + s(i)*object.goalLocation(1,4); % Points in x
-        x(2,i) = (1-s(i))*T(2,4) + s(i)*object.goalLocation(2,4); % Points in y
-        x(3,i) = (1-s(i))*T(3,4) + s(i)*object.goalLocation(3,4); % Points in z
-        % Maintain downwards facing
-        theta(1,i) = 0;             % Roll angle 
-        theta(2,i) = 0;                % Pitch angle
-        theta(3,i) = 0;              % Yaw angle
-    end
-     
-    %T = [rpy2r(theta(1,1),theta(2,1),theta(3,1)) x(:,1);zeros(1,3) 1];          % Create transformation of first point and angle
-    T = [T(1:3,1:3) x(:,1); zeros(1,3) 1];  % Keeps rpy same as current pos 
-    q0 = zeros(1,4);                                                            % Initial guess for joint angles
-    qMatrix(1,:) = calcModel.ikcon(T,q0);                                           % Solve joint angles to achieve first waypoint
-    
-    % Track the trajectory with RMRC
-    for i = 1:steps-1
-        if h == true %Check for emergency stop
-            L.mlog = {L.DEBUG,mfilename('class'),['RMRC: ','EMERGENCY STOP']};
-            return
-        end
-        T = calcModel.fkine(qMatrix(i,:));                                          % Get forward transformation at current joint state
-        deltaX = x(:,i+1) - T(1:3,4);                                         	% Get position error from next waypoint
-        Rd = rpy2r(theta(1,i+1),theta(2,i+1),theta(3,i+1));                     % Get next RPY angles, convert to rotation matrix
-        Ra = T(1:3,1:3);                                                        % Current end-effector rotation matrix
-        Ra = real(Ra);
-        Rdot = (1/deltaT)*(Rd - Ra);                                            % Calculate rotation matrix error (requires small value for deltaT to work)
-        S = Rdot*Ra';                                                           % Skew symmetric! (TODO - Check week 6??????????)
-        linear_velocity = (1/deltaT)*deltaX;
-        angular_velocity = [S(3,2);S(1,3);S(2,1)];                              % Check the structure of Skew Symmetric matrix!!
-        deltaTheta = tr2rpy(Rd*Ra');                                            % Convert rotation matrix to RPY angles
-        xdot = W*[linear_velocity;angular_velocity];                          	% Calculate end-effector velocity to reach next waypoint.
-        J = calcModel.jacob0(qMatrix(i,:));                                         % Get Jacobian at current joint state (Jacobian with respect to the base, alternatively to the end effector)
-        m(i) = sqrt(det(J*J'));
-        lambdaMax = 5E-2;
-        if m(i) < epsilon  % If manipulability is less than given threshold
-            lambda = (1 - m(i)/epsilon)*lambdaMax;
-        else
-            lambda = 0;
-        end
-        invJ = inv(J'*J + lambda *eye(4))*J';                                   % DLS Inverse
-        qdot(i,:) = (invJ*xdot)';                                               % Solve the RMRC equation (you may need to transpose the vector)
-        for j = 1:4                                                           % Loop through joints 1 to 6
-            if h == true %Check for emergency stop
-                L.mlog = {L.DEBUG,mfilename('class'),['RMRC: ','EMERGENCY STOP']};
-                return
-            end
-            if qMatrix(i,j) + deltaT*qdot(i,j) < calcModel.qlim(j,1)                % If next joint angle is lower than joint limit...
-                qdot(i,j) = 0; % Stop the motor
-                L.mlog = {L.DEBUG,mfilename('class'),['RMRC: Next joint angle is lower than joint limit: ',num2str(qMatrix(i,j) + deltaT*qdot(i,j)),' < ',num2str(calcModel.qlim(j,1)),' - Motor stopped!']};
-            elseif qMatrix(i,j) + deltaT*qdot(i,j) > calcModel.qlim(j,2)                 % If next joint angle is greater than joint limit ...
-                qdot(i,j) = 0; % Stop the motor
-                L.mlog = {L.DEBUG,mfilename('class'),['RMRC: Next joint angle is greater than joint limit: ',num2str(qMatrix(i,j) + deltaT*qdot(i,j)),' > ',num2str(calcModel.qlim(j,2)),' - Motor stopped!']};
-            end
-        end
-        qMatrix(i+1,:) = qMatrix(i,:) + deltaT*qdot(i,:);                       % Update next joint state based on joint velocities
-        positionError(:,i) = x(:,i+1) - T(1:3,4);                               % For plotting
-        angleError(:,i) = deltaTheta;                                           % For plotting
-    end
-    
-    if debug == 1
-        plot3(x(1,:),x(2,:),x(3,:),'r.','LineWidth',1);
-    end
-
-%     modelTraj = jtraj(model.getpos,newQ,steps);
-% 
-%     for i = 1:steps
-% 
-%         self.robot.model.animate(modelTraj(i,:));
-%         modelTr = self.robot.model.fkine(modelTraj(i,:));
-%         modelTr(1:3,1:3) = eye(3); %Don't change object's rotation
-%         object.Move(modelTr);
-%         drawnow()
-%     end
-    
-    %% Do I need this for loop or can I animate in the other one? Will it make the processing time less obvious?
-    for i = 1:steps %Steps or size of qMatrix?
-        if h == true %Check for emergency stop
-            L.mlog = {L.DEBUG,mfilename('class'),['RMRC: ','EMERGENCY STOP']};
-            return
-        end
-        newQ = CalcDobotTo6Dof(qMatrix(i,:),0);
-        model.animate(newQ);
-        modelTr = model.fkine(newQ(i,:));
-        modelTr(1:3,1:3) = eye(3); %Don't change object's rotation
-        object.Move(modelTr);
-        drawnow()
-    end
-    
-    if debug == 1
-        for i = 1:6
-            figure(2)
-            subplot(3,2,i)
-            plot(qMatrix(:,i),'k','LineWidth',1)
-            title(['Joint ', num2str(i)])
-            ylabel('Angle (rad)')
-            refline(0,model.qlim(i,1));
-            refline(0,model.qlim(i,2));
-            
-            figure(3)
-            subplot(3,2,i)
-            plot(qdot(:,i),'k','LineWidth',1)
-            title(['Joint ',num2str(i)]);
-            ylabel('Velocity (rad/s)')
-            refline(0,0)
-        end
-        
-        figure(4)
-        subplot(2,1,1)
-        plot(positionError'*1000,'LineWidth',1)
-        refline(0,0)
-        xlabel('Step')
-        ylabel('Position Error (mm)')
-        legend('X-Axis','Y-Axis','Z-Axis')
-        
-        subplot(2,1,2)
-        plot(angleError','LineWidth',1)
-        refline(0,0)
-        xlabel('Step')
-        ylabel('Angle Error (rad)')
-        legend('Roll','Pitch','Yaw')
-        figure(5)
-        plot(m,'k','LineWidth',1)
-        refline(0,epsilon)
-        title('Manipulability')
-    end 
-
-end 
 
 %% Moves robot with object to ideal starting position to start visual servoing
 function MoveToFindCoaster(model, object, q, steps, L)
