@@ -625,11 +625,25 @@ end
 
 %% CalcDobotTo6Dof - Used to simplfy the calculations on the Dobot due to the hardware limitations of the actual Dobot
 function plotQ = CalcDobotTo6Dof(CalcDobotQ, endEffector)
+%     % Apply end effector offset for the actual dobot
+%     L(1) = Link('d',0,        'a',0.135,  'alpha',0,      'offset',0, 'qlim',[deg2rad(5),deg2rad(80)]);
+%     L(2) = Link('d',0,        'a',0.147,  'alpha',0,      'offset',0, 'qlim',[deg2rad(-5),deg2rad(85)]);
+%     robot = SerialLink(L,'name','test');
+%     robot.base = robot.base * trotx(pi) * trotz(-pi/2);
+%     initialQ = [CalcDobotQ(3),CalcDobot(4)];
+%     trBefore = robot.fkine(initialQ)
+%     % Apply end effector offset
+%     trAfter = trBefore;
+%     trAfter(1,4) = trAfter(1,4) - 0.06; % End effector reach is 0.06, should probably be a const
+%     trAfter(2,4) = trAfter(2,4) + 0.1;  % End effector height is 0.1, should probably be a const
+%     % Find new solution for offset end effector, ignore rotation and z
+%     newQ = robot.ikine(trAfter,initialQ,[1,1,0,0,0,0])
+
     plotQ = zeros(1,6);
     plotQ(1) = CalcDobotQ(1);
     plotQ(2) = CalcDobotQ(2);
-    plotQ(3) = CalcDobotQ(3);
-    plotQ(4) = CalcDobotQ(4);
+    plotQ(3) = CalcDobotQ(3); % plotQ(3) = newQ(1)
+    plotQ(4) = CalcDobotQ(4); % plotQ(4) = newQ(2)
     plotQ(5) = pi/2 - CalcDobotQ(4) - CalcDobotQ(3);
     plotQ(6) = endEffector;
 end
