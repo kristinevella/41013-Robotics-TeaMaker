@@ -405,26 +405,12 @@ classdef Assignment2Starter < handle
                 GetObject(self, self.cups{self.orderCount}.currentLocation, q, 50);
             end
             
-            %MoveToFindCoaster(self.robot.model, self.cups{self.orderCount}, q, 100, self.L); % TODO Add emergency stop check 
-            %MoveToFindCoaster(self.robot.model, self.cups{self.orderCount},q, 100, self.L); % TODO Add emergency stop check 
-            %q0 = self.robot.model.getpos(); % ** Change q to suit 
         
             if self.h == true %Check for emergency stop
                 self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'EMERGENCY STOP']};
                 return
             end
-            
-            %Create coaster in workspace %TODO move to setup part of code
-            %coaster = [-0.67;-3.6;1.08]; %TODO change later, using current position to make sure dobot can actually reach
-        %             coaster = [-0.67,-0.67,-0.77,-0.77;
-        %                     -3.6,-3.5,-3.5,-3.6;
-        %                      1.04,1.04,1.04,1.04];
-        %             figure(1)
-        %             plot_sphere(coaster,0.05,'b') 
-            %plot_circle(coaster,0.15,'b') %TODO fill colour
-            
-            %VisualServoing(self.robot.model,q0,coaster); %TODO FIX!!!!(-0.44,-2.5,1.04)
-            %pause
+
             q = self.qz; % ** Change q to suit
             if milkType > 0
                 self.cups{self.orderCount}.goalLocation = transl(-0.44,-2.5,1.3); %self.coasters{self.orderCount}.currentLocation;
@@ -491,6 +477,13 @@ classdef Assignment2Starter < handle
             end
         end
         
+        %% Demonstrate Visual Servoing
+        function DemoVisualServoing(self)
+            q0 = MoveToTeaArea(self,self.qz,100);
+            SimulateWarningSign(self);
+            VisualServoingForSign(self,q0,self.warningsign);
+        end
+
         %% GetObject - Moves the end effector of the robot model to a set position
         function GetObject(self, location, q, steps)
             self.L.mlog = {self.L.DEBUG,mfilename('class'),['GetObject: ','Called']};
@@ -609,8 +602,10 @@ classdef Assignment2Starter < handle
                 case 4
                     % @Sam, add your visual servoing code here to test and
                     % call a.TestFunction(4)
-                    q0 = MoveToCoasterArea(self,self.qz,100);
-                    VisualServoing(self,q0,self.coasters{self.orderCount})
+                    %visual servoing for sign
+                    q0 = MoveToTeaArea(self,self.qz,100);
+                    SimulateWarningSign(self);
+                    VisualServoingForSign(self,q0,self.warningsign);
             end
         end
     end
@@ -757,13 +752,13 @@ function result = WithinLimits(robot, q)
         end
     end
 end
-%% Moves robot to coaster area before starting visual servoing
-function IdealQs = MoveToCoasterArea(self, q, steps)
-    self.L.mlog = {self.L.DEBUG,mfilename('class'),['MoveToCoasterArea: ','Called']};
+%% Moves robot to tea area before starting visual servoing
+function IdealQs = MoveToTeaArea(self, q, steps)
+    self.L.mlog = {self.L.DEBUG,mfilename('class'),['MoveToTeaArea: ','Called']};
 
     %put robot in an area in the coaster area to start visual servoing
-    IdealQs = [-0.612,-2.3,pi/4,pi/4];
-    %IdealQs = [-0.6023 -2.3562 1.3963 0.2437]; %to find target points on image
+    IdealQs = [-0.887,-pi/2,pi/4,pi/4];
+%       IdealQs = [0,-pi/2,pi/4,pi/4]; %for finding target
 
     newQ = CalcDobotTo6Dof(IdealQs,0);
 
@@ -781,58 +776,36 @@ function IdealQs = MoveToCoasterArea(self, q, steps)
     end
     
 end
-%% Moves robot with object to ideal starting position to start visual servoing
-% function MoveToFindCoaster(model, object, q, steps, L)
-%     L.mlog = {L.DEBUG,mfilename('class'),['MoveToFindCoaster: ','Called']};
-% 
-%     idealStartQs = [0 1.5609 0.7854 0.7854 0 0];
-% 
-%     modelTraj = jtraj(model.getpos,idealStartQs,steps);
-%     for i = 1:steps
-%         model.animate(modelTraj(i,:));
-%         modelTr = model.fkine(modelTraj(i,:));
-%         modelTr(1:3,1:3) = eye(3); %Don't change object's rotation
-%         object.Move(modelTr);
-%         drawnow()
-%     end
-% end
+%% Visual servoing code to retreat from warning sign
+function VisualServoingForSign(self,q0,object) %adapted from Lab 8 visual servoing code
+            % Create image target          
+            signStar = [  953.0248  898.4115  898.4115  953.0248
+                             547.3127  547.3127  601.9260  601.9260]; 
 
-%% Visual servoing code to find coaster
-function VisualServoing(self,q0,object) %adapted from Lab 8 visual servoing code
-            % Create image target (coaster in the centre of the image plane)           
-            coasterStar = [658.1592 768.4425 658.1581 553.5236; 
-                          742.7269 642.3605 535.1427 635.6845];
-            %coasterStar = [512; 512]; %centre of the image
-            halfpointdistance = 0.05;
-%             coaster = [-0.67,-0.67,-0.77,-0.77;
-%             -3.6,-3.5,-3.5,-3.6;
-%             1.04,1.04,1.04,1.04];
-            %cam.plot(object.currentLocation(1:3,4))
-            coasterpoints = [object.currentLocation(1,4)+halfpointdistance,object.currentLocation(1,4)+halfpointdistance,object.currentLocation(1,4)-halfpointdistance,object.currentLocation(1,4)-halfpointdistance;
-                            object.currentLocation(2,4)-halfpointdistance,object.currentLocation(2,4)+halfpointdistance,object.currentLocation(2,4)+halfpointdistance,object.currentLocation(2,4)-halfpointdistance;
-                            object.currentLocation(3,4),object.currentLocation(3,4),object.currentLocation(3,4),object.currentLocation(3,4)];
-            figure(1)
-            plot_sphere(coasterpoints,0.02,'b')
-%             matrix=[1 0 0 -0.7000;
-%             0 0 -1 -3.5425;
-%             0 1 0 1.3147;
-%             0 0 0 1.0000];
-            %coasterpoints = object.currentLocation(1:3,4)
+            distancetosetsignpoints = 0.05;
+
+            signpoints = [object.currentLocation(1,4),object.currentLocation(1,4),object.currentLocation(1,4),object.currentLocation(1,4);
+                            object.currentLocation(2,4)+distancetosetsignpoints,object.currentLocation(2,4)-distancetosetsignpoints,object.currentLocation(2,4)-distancetosetsignpoints,object.currentLocation(2,4)+distancetosetsignpoints;
+                            object.currentLocation(3,4)+distancetosetsignpoints,object.currentLocation(3,4)+distancetosetsignpoints,object.currentLocation(3,4)-distancetosetsignpoints,object.currentLocation(3,4)-distancetosetsignpoints];
+            % uncomment below to see sign points plotted on warning sign in workspace
+%             figure(1)
+%             plot_sphere(signpoints,0.02,'b')
+
             %Add the camera (specs similar to Lab 8 visual servoing code)
+            %added 'sensor' to increase FOV
             cam = CentralCamera('focal', 0.08, 'pixel', 10e-5, ...
-            'resolution', [1024 1024], 'centre', [512 512],'name', 'DOBOTcam','sensor',0.3);
+            'resolution', [1024 1024], 'centre', [512 512],'name', 'DOBOTcam','sensor',0.5);
             % frame rate
-            fps = 50;
+            fps = 100;
 
             %Define values
             %gain of the controler
             lambda = 0.6;
             %depth of the IBVS
-            depth = mean (coasterpoints(1,:));
+            depth = mean (signpoints(1,:));
 
             self.calcDobot.model.plot(q0,'workspace',self.calcDobot.workspace,'nojoints');
             Tc0 = self.calcDobot.model.fkine(q0);
-            Tc0 = Tc0*trotx(-pi/2);
 
             %plot camera
             cam.T = Tc0;
@@ -841,17 +814,17 @@ function VisualServoing(self,q0,object) %adapted from Lab 8 visual servoing code
             light
             
             %Display in image view
-            %Project points to the image
-            p = cam.plot(coasterpoints, 'Tcam', Tc0);
+            %Project points to the image %uncomment below when deciding what target points to set
+%             p = cam.plot(signpoints, 'Tcam', Tc0);
+
             %camera view and plotting
             cam.clf()
-            cam.plot(coasterStar, '*'); % create the camera view
+            cam.plot(signStar, '*'); % create the camera view
             cam.hold(true);
-            cam.plot(coasterpoints, 'Tcam', Tc0, 'o'); % create the camera view
+            cam.plot(signpoints, 'Tcam', Tc0, 'o'); % create the camera view
             pause(2)
             cam.hold(true);
-            cam.plot(coasterpoints);    % show initial view
-            %cam.plot(object.currentLocation(1:3,4))
+            cam.plot(signpoints);    % show initial view
 
             %Initialise display arrays
             vel_p = [];
@@ -859,17 +832,16 @@ function VisualServoing(self,q0,object) %adapted from Lab 8 visual servoing code
             history = [];
 
             %% 1.4 Loop
-            % loop of the visual servoing
+            % loop of the visual servoing %TODO scale down plotted calcdobot
             ksteps = 0;
              while true
                     ksteps = ksteps + 1;
                     
                     % compute the view of the camera
-                    uv = cam.plot(coasterpoints);
+                    uv = cam.plot(signpoints);
                     
                     % compute image plane error as a column
-                      e = coasterStar-uv;  % feature error
-%                     e = uv-coasterStar;  % feature error
+                    e = uv-signStar;  % feature error
                     e = e(:);
                     Zest = [];
                     
@@ -877,7 +849,7 @@ function VisualServoing(self,q0,object) %adapted from Lab 8 visual servoing code
                     % compute the Jacobian
                     if isempty(depth)
                         % exact depth from simulation (not possible in practice)
-                        pt = homtrans(inv(Tcam), coasterpoints);
+                        pt = homtrans(inv(Tcam), signpoints);
                         J = cam.visjac_p(uv, pt(3,:) );
                     elseif ~isempty(Zest)
                         J = cam.visjac_p(uv, Zest);
@@ -912,12 +884,14 @@ function VisualServoing(self,q0,object) %adapted from Lab 8 visual servoing code
                      end
             
                     %Update joints
-                    q = q0' + (1/fps)*qp
+                    q = q0' + (1/fps)*qp;
                     self.calcDobot.model.animate(q');
+                    newQ = CalcDobotTo6Dof(q,0);
+                    self.robot.model.animate(newQ);
             
                     %Get camera location
                     Tc = self.calcDobot.model.fkine(q);
-                    Tc = Tc*trotx(-pi/2);
+                    %Tc = Tc*trotx(-pi/2);
                     cam.T = Tc;
                     drawnow
                     
@@ -944,12 +918,13 @@ function VisualServoing(self,q0,object) %adapted from Lab 8 visual servoing code
                     
                     %update current joint position
                     q0 = q';
+
                     
              end
              
             %% 1.5 Plot results
             figure()            
-            plot_p(history,coasterStar,cam)
+            plot_p(history,signStar,cam)
             figure()
             plot_camera(history)
             figure()
@@ -1009,9 +984,9 @@ function plot_vel(history)
     end
     clf
     vel = [history.vel]';
-    plot(vel(:,1:3), '-')
+    plot(vel(:,1:2), '-')
     hold on
-    plot(vel(:,4:6), '--')
+    plot(vel(:,3:4), '--')
     hold off
     ylabel('Cartesian velocity')
     grid
@@ -1054,7 +1029,7 @@ function plot_robjointvel(history)
     end
     clf
     vel = [history.qp]';
-    plot(vel(:,1:6), '-')
+    plot(vel(:,1:4), '-')
     hold on
     ylabel('Joint velocity')
     grid
@@ -1068,7 +1043,7 @@ function plot_robjointpos(history)
     end
     clf
     pos = [history.q]';
-    plot(pos(:,1:6), '-')
+    plot(pos(:,1:4), '-')
     hold on
     ylabel('Joint angle')
     grid
