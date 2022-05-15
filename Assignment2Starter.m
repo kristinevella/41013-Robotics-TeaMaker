@@ -748,8 +748,8 @@ function IdealQs = MoveToCoasterArea(self, q, steps)
     self.L.mlog = {self.L.DEBUG,mfilename('class'),['MoveToCoasterArea: ','Called']};
 
     %put robot in an area in the coaster area to start visual servoing
-    %IdealQs = [0,pi/2,pi/4,pi/4];
-    IdealQs = [0 1.2759 1.1624 0.7571]; %to find target points on image
+    IdealQs = [-0.612,-2.3,pi/4,pi/4];
+    %IdealQs = [-0.6023 -2.3562 1.3963 0.2437]; %to find target points on image
 
     newQ = CalcDobotTo6Dof(IdealQs,0);
 
@@ -786,7 +786,8 @@ end
 %% Visual servoing code to find coaster
 function VisualServoing(self,q0,object) %adapted from Lab 8 visual servoing code
             % Create image target (coaster in the centre of the image plane)           
-            %coasterStar = [800 200 200 800; 300 300 800 800];
+            coasterStar = [658.1592 768.4425 658.1581 553.5236; 
+                          742.7269 642.3605 535.1427 635.6845];
             %coasterStar = [512; 512]; %centre of the image
             halfpointdistance = 0.05;
 %             coaster = [-0.67,-0.67,-0.77,-0.77;
@@ -807,7 +808,7 @@ function VisualServoing(self,q0,object) %adapted from Lab 8 visual servoing code
             cam = CentralCamera('focal', 0.08, 'pixel', 10e-5, ...
             'resolution', [1024 1024], 'centre', [512 512],'name', 'DOBOTcam','sensor',0.3);
             % frame rate
-            fps = 1000;
+            fps = 50;
 
             %Define values
             %gain of the controler
@@ -815,6 +816,7 @@ function VisualServoing(self,q0,object) %adapted from Lab 8 visual servoing code
             %depth of the IBVS
             depth = mean (coasterpoints(1,:));
 
+            self.calcDobot.model.plot(q0,'workspace',self.calcDobot.workspace,'nojoints');
             Tc0 = self.calcDobot.model.fkine(q0);
             Tc0 = Tc0*trotx(-pi/2);
 
@@ -826,10 +828,10 @@ function VisualServoing(self,q0,object) %adapted from Lab 8 visual servoing code
             
             %Display in image view
             %Project points to the image
-            p = cam.plot(coasterpoints, 'Tcam', Tc0)
+            p = cam.plot(coasterpoints, 'Tcam', Tc0);
             %camera view and plotting
             cam.clf()
-            %cam.plot(coasterStar, '*'); % create the camera view
+            cam.plot(coasterStar, '*'); % create the camera view
             cam.hold(true);
             cam.plot(coasterpoints, 'Tcam', Tc0, 'o'); % create the camera view
             pause(2)
@@ -852,7 +854,8 @@ function VisualServoing(self,q0,object) %adapted from Lab 8 visual servoing code
                     uv = cam.plot(coasterpoints);
                     
                     % compute image plane error as a column
-                    e = coasterStar-uv;  % feature error
+                      e = coasterStar-uv;  % feature error
+%                     e = uv-coasterStar;  % feature error
                     e = e(:);
                     Zest = [];
                     
@@ -878,7 +881,7 @@ function VisualServoing(self,q0,object) %adapted from Lab 8 visual servoing code
                     fprintf('v: %.3f %.3f %.3f %.3f %.3f %.3f\n', v);
             
                     %compute robot's Jacobian and inverse
-                    J2 = model.jacobn(q0);
+                    J2 = self.calcDobot.model.jacobn(q0);
                     Jinv = pinv(J2);
                     % get joint velocities
                     qp = Jinv*v;
@@ -895,11 +898,12 @@ function VisualServoing(self,q0,object) %adapted from Lab 8 visual servoing code
                      end
             
                     %Update joints
-                    q = q0' + (1/fps)*qp;
-                    model.animate(q');
+                    q = q0' + (1/fps)*qp
+                    self.calcDobot.model.animate(q');
             
                     %Get camera location
-                    Tc = model.fkine(q);
+                    Tc = self.calcDobot.model.fkine(q);
+                    Tc = Tc*trotx(-pi/2);
                     cam.T = Tc;
                     drawnow
                     
@@ -926,7 +930,7 @@ function VisualServoing(self,q0,object) %adapted from Lab 8 visual servoing code
                     
                     %update current joint position
                     q0 = q';
-                    pause
+                    
              end
              
             %% 1.5 Plot results
