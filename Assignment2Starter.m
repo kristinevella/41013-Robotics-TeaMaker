@@ -479,9 +479,46 @@ classdef Assignment2Starter < handle
         
         %% Demonstrate Visual Servoing
         function DemoVisualServoing(self)
+            RaiseBarriers(self)
             q0 = MoveToTeaArea(self,self.qz,100);
             SimulateWarningSign(self);
             VisualServoingForSign(self,q0,self.warningsign);
+        end
+
+        %% Reset Simulation
+        function ResetSimulation(self)
+            self.L.mlog = {self.L.DEBUG,mfilename('class'),['ResetSimulation: ','Called']};
+            disp('Resetting the environment...')
+
+            %reset cups
+            try delete(self.cups{1}.mesh); end
+            try delete(self.cups{2}.mesh); end
+            try delete(self.cups{3}.mesh); end
+
+            for i = 1:self.CUP_TOTAL
+            self.cups{i} = MoveableObject('cup.ply');
+            end
+
+            self.cups{1}.Move(transl(-1,-3.6,1.12));
+            self.cups{2}.Move(transl(-0.8,-3.6,1.12));
+            self.cups{3}.Move(transl(-0.6,-3.6,1.12));
+
+            %reset sugar cube
+            try delete(self.sugarcube.mesh); end
+            self.sugarcube = MoveableObject('sugarcube.ply'); 
+            self.sugarcube.Move(transl(-0.45 ,-2.2,1.05));
+
+            %reset barriers
+            try delete(self.frontBarrier); end
+            try delete(self.sideBarrier); end
+            self.frontBarrier = surf([-0.1,-0.1;-0.1,-0.1],[-3.7,-3.7;-1.3,-1.3],[self.BARRIER_HEIGHT_MIN,self.BARRIER_HEIGHT_MIN;self.BARRIER_HEIGHT_MIN,self.BARRIER_HEIGHT_MIN],'CData',flip(imread('glass.jpg')),'FaceColor','texturemap','FaceAlpha',0.3,'EdgeColor','none');
+            self.sideBarrier = surf([-1.5,-1.5;-0.1,-0.1],[-3.7,-3.7;-3.7,-3.7],[self.BARRIER_HEIGHT_MIN,self.BARRIER_HEIGHT_MIN;self.BARRIER_HEIGHT_MIN,self.BARRIER_HEIGHT_MIN],'CData',flip(imread('glass.jpg')),'FaceColor','texturemap','FaceAlpha',0.3,'EdgeColor','none');
+            
+            %reset Dobot
+            ResetPosition(self);
+
+            %delete warning sign
+            try delete(self.warningsign.mesh); end
         end
 
         %% GetObject - Moves the end effector of the robot model to a set position
