@@ -77,13 +77,13 @@ classdef Assignment2Starter < handle
             end
 
             RaiseBarriers(self);      
-            GetCup(self, self.qz, pi, transl(-1,-2.3,1.28)); %% Pickup cup and place under the water dispenser
-            DispenseLiquid(self, [-1,-2.35,1.3], self.qz, 'b', 'water'); %% change q to suit                         
+            GetCup(self, self.qz, pi, transl(-1,-2.3,1.28));                % Pickup cup and place under the water dispenser
+            DispenseLiquid(self, [-1,-2.35,1.3], self.qz, 'b', 'water');                        
             GetTeaBag(self, self.qz, teaType);
             GetSugar(self, self.qz, sugarQuantity);
             GetMilk(self, self.qz, milkType);
-            FindCoaster(self, milkType);
-            StirTea(self);
+            FindCoaster(self, milkType);                                    % Uses Visual Servoing
+            StirTea(self);                                                  % Uses RMRC
             ResetPosition(self);
 
             if self.h == true %Check for emergency stop
@@ -310,7 +310,7 @@ classdef Assignment2Starter < handle
             tr = self.calcDobot.model.fkine(qGoal);
             self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'Checking result using fkine: ', self.L.MatrixToString(tr)]};
         
-            AvoidCollisions(self.calcDobot, self.robot, self.radii, self.centerPoint, qGoal, self.sprayBottle.tVertices, self.L, self.h); % TODO Add a number of tries or do a check first to see if the goal position is in collision and therefore it is impossible
+            AvoidCollisions(self.robot, self.radii, self.centerPoint, qGoal, self.sprayBottle.tVertices, self.L, self.h); % TODO Add a number of tries or do a check first to see if the goal position is in collision and therefore it is impossible
         
             %try delete(self.teaBag); end % remove after testing
             %figure(1);                                                      %% plotted figures in other functions cause the teabag to plot on a different plot
@@ -341,7 +341,7 @@ classdef Assignment2Starter < handle
             if sugarQuantity > 0                                        % Done only if sugar was requested 
                 for i=1:sugarQuantity
                     GetObject(self, self.sugarcube.currentLocation, qInitial, 50); % Go to the sugar canister
-                    self.sugarcube.goalLocation = transl(self.cups{self.orderCount}.currentLocation);
+                    self.sugarcube.goalLocation = self.cups{self.orderCount}.currentLocation;
                     MoveObject(self, self.sugarcube, qInitial, 100, 0); % Pick up sugercube and place in cup
             
                     if self.h == true %Check for emergency stop
@@ -447,8 +447,8 @@ classdef Assignment2Starter < handle
             if self.debug
                 line_h1 = plot3(rmrc.x(1,:),rmrc.x(2,:),rmrc.x(3,:),'r.','LineWidth',1);
             end
-            x = zeros(3,rmrc.steps/2);
-            for i = 1:2:rmrc.steps %Skip every second to increase speed of animation
+            x = zeros(3,rmrc.steps/4);
+            for i = 1:4:rmrc.steps %Skip some values to increase speed of animation
                 if self.h == true %Check for emergency stop
                     self.L.mlog = {self.L.DEBUG,mfilename('class'),['RMRC: ','EMERGENCY STOP']};
                     return
@@ -681,7 +681,7 @@ function result = IsCollision(robot, radii, centerPoint, qMatrix, points, L, h)
 end
     
 %% Collision Avoidance - derrived from Lab6Solution (From current position to goal position)
-function AvoidCollisions(calcRobot, robot, radii, centerPoint, qGoal, points, L, h)
+function AvoidCollisions(robot, radii, centerPoint, qGoal, points, L, h)
     L.mlog = {L.DEBUG,mfilename('class'),['AvoidCollisions: ','Called']};
 
     if h == true %Check for emergency stop
