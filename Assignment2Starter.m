@@ -191,13 +191,15 @@ classdef Assignment2Starter < handle
                 self.coasters{i} = MoveableObject('coaster.ply');
             end
 
-            self.cups{1}.Move(transl(-0.48,-2.5,1.12));
-            self.cups{2}.Move(transl(-0.48,-2.7,1.12));
-            self.cups{3}.Move(transl(-0.48,-2.9,1.12));
 
-            self.coasters{1}.Move(transl(-0.9,-3.6,1.04));
-            self.coasters{2}.Move(transl(-0.5,-3.6,1.04));
-            self.coasters{3}.Move(transl(-0.7,-3.6,1.04));
+            self.coasters{1}.Move(transl(-0.38,-2.5,1.04));
+            self.coasters{2}.Move(transl(-0.38,-2.7,1.04));
+            self.coasters{3}.Move(transl(-0.38,-2.9,1.04));
+
+            self.cups{1}.Move(transl(-1,-3.6,1.12));
+            self.cups{2}.Move(transl(-0.8,-3.6,1.12));
+            self.cups{3}.Move(transl(-0.6,-3.6,1.12));
+
 
             self.sugarcube = MoveableObject('sugarcube.ply'); 
             self.sugarcube.Move(transl(-0.45 ,-2.2,1.05));
@@ -421,14 +423,14 @@ classdef Assignment2Starter < handle
         %             plot_sphere(coaster,0.05,'b') 
             %plot_circle(coaster,0.15,'b') %TODO fill colour
             
-            %VisualServoing(self.robot.model,q0,coaster); %TODO FIX!!!!
+            %VisualServoing(self.robot.model,q0,coaster); %TODO FIX!!!!(-0.44,-2.5,1.04)
             %pause
             q = self.qz; % ** Change q to suit
             if milkType > 0
-                self.cups{self.orderCount}.goalLocation = transl(-0.9,-3.7,1.3); %self.coasters{self.orderCount}.currentLocation;
+                self.cups{self.orderCount}.goalLocation = transl(-0.44,-2.5,1.3); %self.coasters{self.orderCount}.currentLocation;
                 MoveObject(self, self.cups{self.orderCount}, q, 50, -pi); % Pick up cup and move to coaster
             else 
-                self.cups{self.orderCount}.goalLocation = transl(-0.9,-3.7,1.3); %self.coasters{self.orderCount}.currentLocation;
+                self.cups{self.orderCount}.goalLocation = transl(-0.44,-2.5,1.3); %self.coasters{self.orderCount}.currentLocation;
                 MoveObject(self, self.cups{self.orderCount}, q, 50, -pi); % Pick up cup and move to coaster
             end
         end
@@ -607,6 +609,8 @@ classdef Assignment2Starter < handle
                 case 4
                     % @Sam, add your visual servoing code here to test and
                     % call a.TestFunction(4)
+                    q0 = MoveToCoasterArea(self,self.qz,100);
+                    VisualServoing(self,q0,self.coasters{self.orderCount})
             end
         end
     end
@@ -739,33 +743,69 @@ function result = WithinLimits(robot, q)
         end
     end
 end
+%% Moves robot to coaster area before starting visual servoing
+function IdealQs = MoveToCoasterArea(self, q, steps)
+    self.L.mlog = {self.L.DEBUG,mfilename('class'),['MoveToCoasterArea: ','Called']};
 
-%% Moves robot with object to ideal starting position to start visual servoing
-function MoveToFindCoaster(model, object, q, steps, L)
-    L.mlog = {L.DEBUG,mfilename('class'),['MoveToFindCoaster: ','Called']};
+    %put robot in an area in the coaster area to start visual servoing
+    %IdealQs = [0,pi/2,pi/4,pi/4];
+    IdealQs = [0 1.2759 1.1624 0.7571]; %to find target points on image
 
-    idealStartQs = [0 1.5609 0.7854 0.7854 0 0];
+    newQ = CalcDobotTo6Dof(IdealQs,0);
 
-    modelTraj = jtraj(model.getpos,idealStartQs,steps);
+    %calcTraj = jtraj(self.calcDobot.model.getpos,q,steps); % Remove TODO
+    modelTraj = jtraj(self.robot.model.getpos,newQ,steps);
+
     for i = 1:steps
-        model.animate(modelTraj(i,:));
-        modelTr = model.fkine(modelTraj(i,:));
-        modelTr(1:3,1:3) = eye(3); %Don't change object's rotation
-        object.Move(modelTr);
+        if self.h == true %Check for emergency stop
+            self.L.mlog = {self.L.DEBUG,mfilename('class'),['GetObject: ','EMERGENCY STOP']};
+            return
+        end
+        %self.calcDobot.model.animate(calcTraj(i,:)); % Remove TODO
+        self.robot.model.animate(modelTraj(i,:));
         drawnow()
     end
+    
 end
+%% Moves robot with object to ideal starting position to start visual servoing
+% function MoveToFindCoaster(model, object, q, steps, L)
+%     L.mlog = {L.DEBUG,mfilename('class'),['MoveToFindCoaster: ','Called']};
+% 
+%     idealStartQs = [0 1.5609 0.7854 0.7854 0 0];
+% 
+%     modelTraj = jtraj(model.getpos,idealStartQs,steps);
+%     for i = 1:steps
+%         model.animate(modelTraj(i,:));
+%         modelTr = model.fkine(modelTraj(i,:));
+%         modelTr(1:3,1:3) = eye(3); %Don't change object's rotation
+%         object.Move(modelTr);
+%         drawnow()
+%     end
+% end
 
 %% Visual servoing code to find coaster
-function VisualServoing(model,q0,coaster) %adapted from Lab 8 visual servoing code
+function VisualServoing(self,q0,object) %adapted from Lab 8 visual servoing code
             % Create image target (coaster in the centre of the image plane)           
-            coasterStar = [800 200 200 800; 300 300 800 800];
+            %coasterStar = [800 200 200 800; 300 300 800 800];
             %coasterStar = [512; 512]; %centre of the image
-
-
+            halfpointdistance = 0.05;
+%             coaster = [-0.67,-0.67,-0.77,-0.77;
+%             -3.6,-3.5,-3.5,-3.6;
+%             1.04,1.04,1.04,1.04];
+            %cam.plot(object.currentLocation(1:3,4))
+            coasterpoints = [object.currentLocation(1,4)+halfpointdistance,object.currentLocation(1,4)+halfpointdistance,object.currentLocation(1,4)-halfpointdistance,object.currentLocation(1,4)-halfpointdistance;
+                            object.currentLocation(2,4)-halfpointdistance,object.currentLocation(2,4)+halfpointdistance,object.currentLocation(2,4)+halfpointdistance,object.currentLocation(2,4)-halfpointdistance;
+                            object.currentLocation(3,4),object.currentLocation(3,4),object.currentLocation(3,4),object.currentLocation(3,4)];
+            figure(1)
+            plot_sphere(coasterpoints,0.02,'b')
+%             matrix=[1 0 0 -0.7000;
+%             0 0 -1 -3.5425;
+%             0 1 0 1.3147;
+%             0 0 0 1.0000];
+            %coasterpoints = object.currentLocation(1:3,4)
             %Add the camera (specs similar to Lab 8 visual servoing code)
             cam = CentralCamera('focal', 0.08, 'pixel', 10e-5, ...
-            'resolution', [1024 1024], 'centre', [512 512],'name', 'DOBOTcam');
+            'resolution', [1024 1024], 'centre', [512 512],'name', 'DOBOTcam','sensor',0.3);
             % frame rate
             fps = 1000;
 
@@ -773,9 +813,10 @@ function VisualServoing(model,q0,coaster) %adapted from Lab 8 visual servoing co
             %gain of the controler
             lambda = 0.6;
             %depth of the IBVS
-            depth = mean (coaster(1,:));
+            depth = mean (coasterpoints(1,:));
 
-            Tc0 = model.fkine(q0);
+            Tc0 = self.calcDobot.model.fkine(q0);
+            Tc0 = Tc0*trotx(-pi/2);
 
             %plot camera
             cam.T = Tc0;
@@ -785,15 +826,16 @@ function VisualServoing(model,q0,coaster) %adapted from Lab 8 visual servoing co
             
             %Display in image view
             %Project points to the image
-            p = cam.plot(coaster, 'Tcam', Tc0);
+            p = cam.plot(coasterpoints, 'Tcam', Tc0)
             %camera view and plotting
             cam.clf()
-            cam.plot(coasterStar, '*'); % create the camera view
+            %cam.plot(coasterStar, '*'); % create the camera view
             cam.hold(true);
-            cam.plot(coaster, 'Tcam', Tc0, 'o'); % create the camera view
+            cam.plot(coasterpoints, 'Tcam', Tc0, 'o'); % create the camera view
             pause(2)
             cam.hold(true);
-            cam.plot(coaster);    % show initial view
+            cam.plot(coasterpoints);    % show initial view
+            %cam.plot(object.currentLocation(1:3,4))
 
             %Initialise display arrays
             vel_p = [];
@@ -807,7 +849,7 @@ function VisualServoing(model,q0,coaster) %adapted from Lab 8 visual servoing co
                     ksteps = ksteps + 1;
                     
                     % compute the view of the camera
-                    uv = cam.plot(coaster);
+                    uv = cam.plot(coasterpoints);
                     
                     % compute image plane error as a column
                     e = coasterStar-uv;  % feature error
@@ -818,7 +860,7 @@ function VisualServoing(model,q0,coaster) %adapted from Lab 8 visual servoing co
                     % compute the Jacobian
                     if isempty(depth)
                         % exact depth from simulation (not possible in practice)
-                        pt = homtrans(inv(Tcam), coaster);
+                        pt = homtrans(inv(Tcam), coasterpoints);
                         J = cam.visjac_p(uv, pt(3,:) );
                     elseif ~isempty(Zest)
                         J = cam.visjac_p(uv, Zest);
@@ -901,7 +943,7 @@ function VisualServoing(model,q0,coaster) %adapted from Lab 8 visual servoing co
             
 end
 
-%% plot_ - Functions for plotting (From Lab 8 Solution)
+%% plot_ - Functions for plotting visual servoing(From Lab 8 Solution)
 function plot_p(history,uv_star,camera)
     %VisualServo.plot_p Plot feature trajectory
     %
