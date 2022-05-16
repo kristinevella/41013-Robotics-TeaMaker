@@ -9,6 +9,7 @@ classdef Assignment2Starter < handle
         BARRIER_HEIGHT_MIN = 1;
         BARRIER_HEIGHT_MAX = 2.5;
         CUP_TOTAL = 3;
+        HAND_RADII = [0.14,0.2,0.08];
     end
     properties
         %Logger
@@ -35,6 +36,8 @@ classdef Assignment2Starter < handle
         sideBarrier;
         frontBarrier;
         warningsign;
+        hand;
+        lightCurtainPoints;
 
         orderCount;
 
@@ -76,6 +79,7 @@ classdef Assignment2Starter < handle
                 return;
             end
 
+            lightCurtain_h = InitialiseLightCurtain(self);
             RaiseBarriers(self);      
             GetCup(self, self.qz, pi, transl(-1,-2.3,1.28));                % Pickup cup and place under the water dispenser
             DispenseLiquid(self, [-1,-2.35,1.3], self.qz, 'b', 'water');                        
@@ -92,6 +96,8 @@ classdef Assignment2Starter < handle
             end
             
             LowerBarriers(self);
+            delete(lightCurtain_h);
+            self.lightCurtainPoints = [];
 
             self.orderCount = self.orderCount + 1;
             disp(['Order count = ', num2str(self.orderCount)]);
@@ -157,7 +163,7 @@ classdef Assignment2Starter < handle
             % Surrounding Surfaces
             surf([-1.6,-1.6;4,4],[-4,4.5;-4,4.5],[0.01,0.01;0.01,0.01],'CData',imread('tiles.jpg'),'FaceColor','texturemap'); %Floor
             %surf([-4,-4;-4,-4],[-4,4;-4,4],[0,0;2.7,2.7],'CData',flip(imread('tiles.jpg')),'FaceColor','texturemap'); %Back Wall
-            %surf([-3,1.8;-3,1.8],[-1.8,-1.8;-1.8,-1.8],[0,0;2.7,2.7],'CData',flip(imread('lab2.jpg')),'FaceColor','texturemap'); %Side Wall
+            %surf([-3,1.8;-3,1.8],[-1.8,-1.8;-1.8,-1.8],[0,0;2.7,2.7],'CData',flip(imread('tiles.jpg')),'FaceColor','texturemap'); %Side Wall
 
             %Kitchen
             PlaceObject('KitchenBenchWide.ply', [0,0,0]); % Dimensions L(y):7 W(x):1 H(z):1
@@ -166,16 +172,13 @@ classdef Assignment2Starter < handle
             PlaceObject('Fridge.ply', [0,3.22,0]); % Dimensions L(y):1.25 W(x):1 H(z):2.25
             
             % Safety Features
-            PlaceObject('LightCurtainRear.ply', [-1.5,-1.5,1.04]);
-            PlaceObject('LightCurtainFront.ply', [-0.1,-1.5,1.04]);
+            PlaceObject('LightCurtainRear.ply', [-1.45,-1.45,1.04]);
+            PlaceObject('LightCurtainFront.ply', [-0.05,-1.45,1.04]);
             PlaceObject('ESBwall.ply', [-0.3,-3.8,0.8]);
             PlaceObject('FE.ply', [-0.5,-3.9,0.39]);
             %Glass barrier - Begins in lowered position
             self.frontBarrier = surf([-0.1,-0.1;-0.1,-0.1],[-3.7,-3.7;-1.3,-1.3],[self.BARRIER_HEIGHT_MIN,self.BARRIER_HEIGHT_MIN;self.BARRIER_HEIGHT_MIN,self.BARRIER_HEIGHT_MIN],'CData',flip(imread('glass.jpg')),'FaceColor','texturemap','FaceAlpha',0.3,'EdgeColor','none');
             self.sideBarrier = surf([-1.5,-1.5;-0.1,-0.1],[-3.7,-3.7;-3.7,-3.7],[self.BARRIER_HEIGHT_MIN,self.BARRIER_HEIGHT_MIN;self.BARRIER_HEIGHT_MIN,self.BARRIER_HEIGHT_MIN],'CData',flip(imread('glass.jpg')),'FaceColor','texturemap','FaceAlpha',0.3,'EdgeColor','none');
-            % TODO fix location of barrier so it is not on coasters 
-
-            %PlaceObject('SeatedGirl.ply', [-2.5,-1.2,0])
 
             PlaceObject('hotwaterdispenser.ply', self.WATER_LOCATION); % Set origin at the tap
 
@@ -186,13 +189,12 @@ classdef Assignment2Starter < handle
             PlaceObject('teaContainer_Green.ply',self.GREEN_TEA_LOCATION);
             PlaceObject('teaContainer_LemonAndGinger.ply',self.LEMON_GINGER_TEA_LOCATION);
 
-            PlaceObject('sugarcontainer.ply',[-0.45 ,-2.2,1.04]); %% TODO Move (out of reach)
+            PlaceObject('sugarcontainer.ply',[-0.45 ,-2.2,1.04]);
         
             for i = 1:self.CUP_TOTAL
                 self.cups{i} = MoveableObject('cup.ply');
                 self.coasters{i} = MoveableObject('coaster.ply');
             end
-
 
             self.coasters{1}.Move(transl(-0.38,-2.5,1.04));
             self.coasters{2}.Move(transl(-0.38,-2.7,1.04));
@@ -523,8 +525,6 @@ classdef Assignment2Starter < handle
             self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'Checking result using fkine: ', self.L.MatrixToString(tr)]};
         
             newQ = CalcDobotTo6Dof(self,q,0);
-        
-            %calcTraj = jtraj(self.calcDobot.model.getpos,q,steps); % Remove TODO
             modelTraj = jtraj(self.robot.model.getpos,newQ,steps);
         
             for i = 1:steps
@@ -532,7 +532,6 @@ classdef Assignment2Starter < handle
                     self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'EMERGENCY STOP']};
                     pause(1);
                 end
-                %self.calcDobot.model.animate(calcTraj(i,:)); % Remove TODO
                 self.robot.model.animate(modelTraj(i,:));
                 drawnow()
             end
@@ -605,42 +604,6 @@ classdef Assignment2Starter < handle
             end
         end
 
-        %% TestFunction - For testing/debug purposes only
-        function TestFunction(self, testOption)
-            %clf
-            %hold on
-            %axis equal
-
-            self.debug = true;
-            
-            %InitialiseRobot(self);
-            %InitialiseCalcRobot(self);
-
-            switch testOption
-                case 1                                                      % Test Calculation Robot (3-link) to displayed robot
-                    q = [0,0,0,0];
-                    location = self.cups{2}.currentLocation;
-                    GetObject(self, location, q, 100);
-                case 2                                                      %Test Collision Avoidance
-                    PlaceCollidableItem(self,[-0.9,-3,1]);
-                    itemPoints = self.sprayBottle.tVertices;
-                    item_h = plot3(itemPoints(:,1),itemPoints(:,2),itemPoints(:,3),'b.');         
-                    InitialiseEllipsoids(self)
-                    qGoal = deg2rad([0,-134,45,45,0,0]);
-                    AvoidCollisions(self, self.robot, self.radii, self.centerPoint, qGoal, itemPoints, self.L, self.h);
-                case 3                                                      % Test RMRC
-                    StirTea(self);
-                    %RMRC(self.robot.model, self.cups{1}, transl(self.WATER_LOCATION), self.L, self.h, self.debug);
-                case 4
-                    % @Sam, add your visual servoing code here to test and
-                    % call a.TestFunction(4)
-                    %visual servoing for sign
-                    q0 = MoveToTeaArea(self,self.qz,100);
-                    SimulateWarningSign(self);
-                    VisualServoingForSign(self,q0,self.warningsign);
-            end
-        end
-
         %% CalcDobotTo6Dof - Used to simplfy the calculations on the Dobot due to the hardware limitations of the actual Dobot
         function plotQ = CalcDobotTo6Dof(self, CalcDobotQ, endEffector)
             %     % Apply end effector offset for the actual dobot
@@ -701,7 +664,6 @@ classdef Assignment2Starter < handle
         %% Collision Avoidance - derrived from Lab6Solution (From current position to goal position)
         function AvoidCollisions(self, robot, radii, centerPoint, qGoal, points, L, h)
             L.mlog = {L.DEBUG,mfilename('class'),['AvoidCollisions: ','Called']};
-        
             while h %Check for emergency stop
                 L.mlog = {L.DEBUG,mfilename('class'),['AvoidCollisions: ','EMERGENCY STOP']};
                 pause(1);
@@ -746,7 +708,136 @@ classdef Assignment2Starter < handle
                 robot.model.animate(newQMatrix);
                 pause(0.05);
             end
-        end 
+        end
+
+        function isCollision = PlaceHand(self, location)
+            self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'Called']};
+
+            [X,Y,Z] = ellipsoid(self.centerPoint(1), self.centerPoint(2), self.centerPoint(3), self.HAND_RADII(1), self.HAND_RADII(2), self.HAND_RADII(3));
+            %ellipsoid_h = surf(X,Y,Z,FaceAlpha=0.1);                       % Plot ellipsoid to visualise 
+            self.hand = MoveableObject('hand.ply');
+            self.hand.Move(transl(location));
+            isCollision = false;
+            i = 0.1;
+            if ~isempty(self.lightCurtainPoints)
+                while ~isCollision
+                    location(1,2) = location(1,2)-i;
+                    self.hand.Move(transl(location));
+                    isCollision = CheckForCollisionInLightCurtain(self);
+                    if isCollision
+                        self.h = true;
+                        disp('Stopping Robot');
+                        self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'Stopping Robot']};
+                        return;
+                    end
+                    i = i+0.1;
+                end
+            else 
+                isCollision = false;
+                self.h = false;
+                disp('Light curtain not detected');
+                self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'Light curtain not detected']};
+            end
+        end
+
+        function RemoveHand(self)
+            self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'Called']};
+
+            IsCollision = true;
+            i = 0.1;
+            if ~isempty(self.lightCurtainPoints)
+                while IsCollision
+                    location = self.hand.currentLocation; 
+                    location(2,4) = location(2,4)+i;
+                    self.hand.Move(location);
+                    isCollision = CheckForCollisionInLightCurtain(self);
+                    if ~isCollision
+                        self.h = false;
+                        disp('Collision with light curtain no longer detected - Continue');
+                        self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'Collision with light curtain no longer detected - Continue']};
+                        delete(self.hand.mesh);
+                        return;
+                    end
+                    i = i+0.1;
+                end
+            else 
+                self.h = false;
+                disp('Light curtain not detected');
+                self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'Light curtain not detected']};
+                delete(self.hand.mesh);
+            end
+        end
+
+        function isCollision = CheckForCollisionInLightCurtain(self)
+            self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'Called']};
+
+            try
+                pointsAndOnes = [inv(self.hand.currentLocation) * [self.lightCurtainPoints,ones(size(self.lightCurtainPoints,1),1)]']';
+                updatedPoints = pointsAndOnes(:,1:3);
+                algebraicDist = GetAlgebraicDist(updatedPoints, self.centerPoint, self.HAND_RADII);
+                pointsInside = find(algebraicDist <= 1);
+                if any(pointsInside)
+                    isCollision = true;
+                    disp('Collision with light curtain! Stopping Robot');
+                    self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'Collision detected between hand and light curtain']};
+                else
+                    isCollision = false;
+                end
+            catch
+                isCollision = false;
+            end
+        end
+
+        function lightCurtain_h = InitialiseLightCurtain(self)
+            [X,Z] = meshgrid(-0.7:0.01:0.7,0:0.07:0.8);
+            sizeMat = size(X);
+            Y = repmat(0.75,sizeMat(1),sizeMat(2));
+            %lightCurtainSurf_h = surf(X,Y,Z);
+            self.lightCurtainPoints = [X(:),Y(:),Z(:)]; % Combine one surface as a point cloud
+            self.lightCurtainPoints = self.lightCurtainPoints + repmat([-0.75,-2.2,1.05],size(self.lightCurtainPoints,1),1);
+            lightCurtain_h = plot3(self.lightCurtainPoints(:,1),self.lightCurtainPoints(:,2),self.lightCurtainPoints(:,3),'r.');
+        end
+
+        %% TestFunction - For testing/debug purposes only
+        function TestFunction(self, testOption)
+            %clf
+            %hold on
+            %axis equal
+
+            self.debug = true;
+            
+            %InitialiseRobot(self);
+            %InitialiseCalcRobot(self);
+
+            switch testOption
+                case 1                                                      % Test Calculation Robot (3-link) to displayed robot
+                    q = [0,0,0,0];
+                    location = self.cups{2}.currentLocation;
+                    GetObject(self, location, q, 100);
+                case 2                                                      %Test Collision Avoidance
+                    PlaceCollidableItem(self,[-0.9,-3,1]);
+                    itemPoints = self.sprayBottle.tVertices;
+                    item_h = plot3(itemPoints(:,1),itemPoints(:,2),itemPoints(:,3),'b.');         
+                    InitialiseEllipsoids(self)
+                    qGoal = deg2rad([0,-134,45,45,0,0]);
+                    AvoidCollisions(self, self.robot, self.radii, self.centerPoint, qGoal, itemPoints, self.L, self.h);
+                case 3                                                      % Test RMRC
+                    StirTea(self);
+                    %RMRC(self.robot.model, self.cups{1}, transl(self.WATER_LOCATION), self.L, self.h, self.debug);
+                case 4
+                    % @Sam, add your visual servoing code here to test and
+                    % call a.TestFunction(4)
+                    %visual servoing for sign
+                    q0 = MoveToTeaArea(self,self.qz,100);
+                    SimulateWarningSign(self);
+                    VisualServoingForSign(self,q0,self.warningsign);
+                case 5
+                    hold on 
+                    axis equal
+                    lightCurtain_h = InitialiseLightCurtain(self);
+                    value = self.PlaceHand([-0.6,-1,1.5]);
+            end
+        end
     end
 end
 
