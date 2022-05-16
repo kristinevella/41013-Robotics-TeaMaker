@@ -166,6 +166,8 @@ classdef Assignment2Starter < handle
             PlaceObject('Fridge.ply', [0,3.22,0]); % Dimensions L(y):1.25 W(x):1 H(z):2.25
             
             % Safety Features
+            PlaceObject('LightCurtainRear.ply', [-1.5,-1.5,1.04]);
+            PlaceObject('LightCurtainFront.ply', [-0.1,-1.5,1.04]);
             PlaceObject('ESBwall.ply', [-0.3,-3.8,0.8]);
             PlaceObject('FE.ply', [-0.5,-3.9,0.39]);
             %Glass barrier - Begins in lowered position
