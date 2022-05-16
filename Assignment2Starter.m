@@ -30,7 +30,7 @@ classdef Assignment2Starter < handle
         cups; % Array of cups
         coasters; % Array of coasters
         teaBags;
-        sugarcube;
+        sugarcubes;
         spoon;
         sprayBottle;
         sideBarrier;
@@ -177,7 +177,7 @@ classdef Assignment2Starter < handle
             PlaceObject('ESBwall.ply', [-0.3,-3.8,0.8]);
             PlaceObject('FE.ply', [-0.5,-3.9,0.39]);
             %Glass barrier - Begins in lowered position
-            self.frontBarrier = surf([-0.1,-0.1;-0.1,-0.1],[-3.7,-3.7;-1.3,-1.3],[self.BARRIER_HEIGHT_MIN,self.BARRIER_HEIGHT_MIN;self.BARRIER_HEIGHT_MIN,self.BARRIER_HEIGHT_MIN],'CData',flip(imread('glass.jpg')),'FaceColor','texturemap','FaceAlpha',0.3,'EdgeColor','none');
+            self.frontBarrier = surf([-0.1,-0.1;-0.1,-0.1],[-3.7,-3.7;-1.45,-1.45],[self.BARRIER_HEIGHT_MIN,self.BARRIER_HEIGHT_MIN;self.BARRIER_HEIGHT_MIN,self.BARRIER_HEIGHT_MIN],'CData',flip(imread('glass.jpg')),'FaceColor','texturemap','FaceAlpha',0.3,'EdgeColor','none');
             self.sideBarrier = surf([-1.5,-1.5;-0.1,-0.1],[-3.7,-3.7;-3.7,-3.7],[self.BARRIER_HEIGHT_MIN,self.BARRIER_HEIGHT_MIN;self.BARRIER_HEIGHT_MIN,self.BARRIER_HEIGHT_MIN],'CData',flip(imread('glass.jpg')),'FaceColor','texturemap','FaceAlpha',0.3,'EdgeColor','none');
 
             PlaceObject('hotwaterdispenser.ply', self.WATER_LOCATION); % Set origin at the tap
@@ -204,9 +204,13 @@ classdef Assignment2Starter < handle
             self.cups{2}.Move(transl(-0.8,-3.6,1.12));
             self.cups{3}.Move(transl(-0.6,-3.6,1.12));
 
-
-            self.sugarcube = MoveableObject('sugarcube.ply'); 
-            self.sugarcube.Move(transl(-0.45 ,-2.2,1.05));
+            % Fill sugar container - These are for display only
+            PlaceObject('sugarcube.ply',[-0.45,-2.2,1.05]);
+            PlaceObject('sugarcube.ply',[-0.47,-2.21,1.05]);
+            PlaceObject('sugarcube.ply',[-0.44,-2.24,1.1]);
+            PlaceObject('sugarcube.ply',[-0.49,-2.23,1.13]);
+            PlaceObject('sugarcube.ply',[-0.41,-2.21,1.14]);
+            PlaceObject('sugarcube.ply',[-0.45,-2.25,1.16]);
 
             InitialiseCalcRobot(self);
             figure(1) % remove later
@@ -348,9 +352,12 @@ classdef Assignment2Starter < handle
                         self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'EMERGENCY STOP']};
                         pause(1);
                     end
-                    GetObject(self, self.sugarcube.currentLocation, qInitial, 50); % Go to the sugar canister
-                    self.sugarcube.goalLocation = self.cups{self.orderCount}.currentLocation;
-                    MoveObject(self, self.sugarcube, qInitial, 100, 0); % Pick up sugercube and place in cup
+                    self.sugarcubes{i} = MoveableObject('sugarcube.ply'); 
+                    self.sugarcubes{i}.Move(transl(-0.45 ,-2.2,1.05));
+                    GetObject(self, self.sugarcubes{i}.currentLocation, qInitial, 50); % Go to the sugar canister
+                    self.sugarcubes{i}.goalLocation = self.cups{self.orderCount}.currentLocation;
+                    MoveObject(self, self.sugarcubes{i}, qInitial, 100, 0); % Pick up sugercube and place in cup
+                    try delete(self.sugarcubes{i}.mesh); end
                 end
             end 
         end
@@ -476,38 +483,21 @@ classdef Assignment2Starter < handle
             self.L.mlog = {self.L.DEBUG,mfilename('class'),['ResetSimulation: ','Called']};
             disp('Resetting the environment...')
 
-            %reset cups
-            try delete(self.cups{1}.mesh); end
-            try delete(self.cups{2}.mesh); end
-            try delete(self.cups{3}.mesh); end
-
-            for i = 1:self.CUP_TOTAL
-            self.cups{i} = MoveableObject('cup.ply');
+            for i = 1:self.CUP_TOTAL                                        % Reset cups
+                try delete(self.cups{i}.mesh); end
+                self.cups{i} = MoveableObject('cup.ply');
             end
 
             self.cups{1}.Move(transl(-1,-3.6,1.12));
             self.cups{2}.Move(transl(-0.8,-3.6,1.12));
             self.cups{3}.Move(transl(-0.6,-3.6,1.12));
 
-            %reset sugar cube
-            try delete(self.sugarcube.mesh); end
-            self.sugarcube = MoveableObject('sugarcube.ply'); 
-            self.sugarcube.Move(transl(-0.45 ,-2.2,1.05));
+            LowerBarriers(self);                                            % Reset barriers
+            ResetPosition(self);                                            % Reset Dobot
 
-            %reset barriers
-            LowerBarriers(self);
-%             try delete(self.frontBarrier); end
-%             try delete(self.sideBarrier); end
-%             self.frontBarrier = surf([-0.1,-0.1;-0.1,-0.1],[-3.7,-3.7;-1.3,-1.3],[self.BARRIER_HEIGHT_MIN,self.BARRIER_HEIGHT_MIN;self.BARRIER_HEIGHT_MIN,self.BARRIER_HEIGHT_MIN],'CData',flip(imread('glass.jpg')),'FaceColor','texturemap','FaceAlpha',0.3,'EdgeColor','none');
-%             self.sideBarrier = surf([-1.5,-1.5;-0.1,-0.1],[-3.7,-3.7;-3.7,-3.7],[self.BARRIER_HEIGHT_MIN,self.BARRIER_HEIGHT_MIN;self.BARRIER_HEIGHT_MIN,self.BARRIER_HEIGHT_MIN],'CData',flip(imread('glass.jpg')),'FaceColor','texturemap','FaceAlpha',0.3,'EdgeColor','none');
-            
-            %reset Dobot
-            ResetPosition(self);
+            self.orderCount = 1;                                            % Reset order count
 
-            self.orderCount = 1;
-
-            %delete warning sign
-            try delete(self.warningsign.mesh); end
+            try delete(self.warningsign.mesh); end                          % Delete warning sign
         end
 
         %% GetObject - Moves the end effector of the robot model to a set position
