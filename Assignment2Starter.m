@@ -879,7 +879,7 @@ end
 function VisualServoingForSign(self,q0,object) %adapted from Lab 8 visual servoing code
             % Create image target          
             signStar = [  953.0248  898.4115  898.4115  953.0248
-                             547.3127  547.3127  601.9260  601.9260]; 
+                          547.3127  547.3127  601.9260  601.9260]; 
 
             distancetosetsignpoints = 0.05;
 
@@ -903,7 +903,7 @@ function VisualServoingForSign(self,q0,object) %adapted from Lab 8 visual servoi
             %depth of the IBVS
             depth = mean (signpoints(1,:));
 
-            self.calcDobot.model.plot(q0,'workspace',self.calcDobot.workspace,'nojoints');
+            self.calcDobot.model.plot(q0,'workspace',self.calcDobot.workspace,'nojoints','scale',0.1,'noarrow');
             Tc0 = self.calcDobot.model.fkine(q0);
 
             %plot camera
@@ -931,7 +931,7 @@ function VisualServoingForSign(self,q0,object) %adapted from Lab 8 visual servoi
             history = [];
 
             %% 1.4 Loop
-            % loop of the visual servoing %TODO scale down plotted calcdobot
+            % loop of the visual servoing
             ksteps = 0;
              while true
                     ksteps = ksteps + 1;
@@ -985,7 +985,7 @@ function VisualServoingForSign(self,q0,object) %adapted from Lab 8 visual servoi
                     %Update joints
                     q = q0' + (1/fps)*qp;
                     self.calcDobot.model.animate(q');
-                    newQ = CalcDobotTo6Dof(q,0);
+                    newQ = CalcDobotTo6Dof(self,q',0);
                     self.robot.model.animate(newQ);
             
                     %Get camera location
@@ -1022,16 +1022,16 @@ function VisualServoingForSign(self,q0,object) %adapted from Lab 8 visual servoi
              end
              
             %% 1.5 Plot results
-            figure()            
-            plot_p(history,signStar,cam)
-            figure()
-            plot_camera(history)
-            figure()
-            plot_vel(history)
-            figure()
-            plot_robjointpos(history)
-            figure()
-            plot_robjointvel(history)
+%             figure()            
+%             plot_p(history,signStar,cam)
+%             figure()
+%             plot_camera(history)
+%             figure()
+%             plot_vel(history)
+%             figure()
+%             plot_robjointpos(history)
+%             figure()
+%             plot_robjointvel(history)
             
 end
 
