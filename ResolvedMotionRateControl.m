@@ -144,8 +144,8 @@ classdef ResolvedMotionRateControl
                 self.x(2,i) = (1-s(i))*T(2,4) + s(i)*location(2,4); % Points in y
                 self.x(3,i) = (1-s(i))*T(3,4) + s(i)*location(3,4); % Points in z
                 % Change to maintain downwards facing
-                self.theta(1,i) = 0;             % Roll angle 
-                self.theta(2,i) = 0;                % Pitch angle
+                self.theta(1,i) = 0;              % Roll angle 
+                self.theta(2,i) = 0;              % Pitch angle
                 self.theta(3,i) = 0;              % Yaw angle
             end
             T = [rpy2r(self.theta(1,1),self.theta(2,1),self.theta(3,1)) self.x(:,1);zeros(1,3) 1];          % Create transformation of first point and angle
