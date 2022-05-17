@@ -606,33 +606,39 @@ classdef Assignment2Starter < handle
         %% CalcDobotTo6Dof - Used to simplfy the calculations on the Dobot due to the hardware limitations of the actual Dobot
         function plotQ = CalcDobotTo6Dof(self, CalcDobotQ, endEffector)
             self.L.mlog = {self.L.DEBUG,mfilename('class'),'CalcDobotTo6Dof: Called'};
-            % Find the location of the calcDobot
-            trBefore = self.calcDobot.model.fkine(CalcDobotQ);
-            % Modify the end effector location, and add end effector
-            % offsets, end effector height: 0.1, end effector length: 0.06
-            trAfter = trBefore;
-            theta = abs(CalcDobotQ(2));
-            if CalcDobotQ(2) <= 0 && CalcDobotQ(2) >= deg2rad(-135)
-                trAfter(1,4) = trBefore(1,4) + 0.06 * cos(theta);
-                trAfter(2,4) = trBefore(2,4) - 0.06 * sin(theta);
-            elseif CalcDobotQ(2) > 0 && CalcDobotQ(2) <= deg2rad(135)
-                trAfter(1,4) = trBefore(1,4) + 0.06 * cos(theta);
-                trAfter(2,4) = trBefore(2,4) + 0.06 * sin(theta);
-            else 
-                disp('ERROR: Q(2) does not meet any conditions');
-            end
-            trAfter(3,4) = trBefore(3,4) + 0.1;
-            % Recalculate joint angles for the offsetted location, ignoring
-            % rotation
-            newQ = self.calcDobot.model.ikine(trAfter,CalcDobotQ,[1,1,1,0,0,0]);
-            %newQ = self.calcDobot.model.ikcon(trAfter,CalcDobotQ);
+%             % Find the location of the calcDobot
+%             trBefore = self.calcDobot.model.fkine(CalcDobotQ);
+%             % Modify the end effector location, and add end effector
+%             % offsets, end effector height: 0.1, end effector length: 0.06
+%             trAfter = trBefore;
+%             theta = abs(CalcDobotQ(2));
+%             if CalcDobotQ(2) <= 0 && CalcDobotQ(2) >= deg2rad(-135)
+%                 trAfter(1,4) = trBefore(1,4) + 0.06 * cos(theta);
+%                 trAfter(2,4) = trBefore(2,4) - 0.06 * sin(theta);
+%             elseif CalcDobotQ(2) > 0 && CalcDobotQ(2) <= deg2rad(135)
+%                 trAfter(1,4) = trBefore(1,4) + 0.06 * cos(theta);
+%                 trAfter(2,4) = trBefore(2,4) + 0.06 * sin(theta);
+%             else 
+%                 disp('ERROR: Q(2) does not meet any conditions');
+%             end
+%             trAfter(3,4) = trBefore(3,4) + 0.1;
+%             % Recalculate joint angles for the offsetted location, ignoring
+%             % rotation
+%             newQ = self.calcDobot.model.ikine(trAfter,CalcDobotQ,[1,1,1,0,0,0]);
+%             %newQ = self.calcDobot.model.ikcon(trAfter,CalcDobotQ);
 
             plotQ = zeros(1,6);
-            plotQ(1) = newQ(1); % plotQ(1) = CalcDobotQ(1)
-            plotQ(2) = newQ(2); % plotQ(2) = CalcDobotQ(2)
-            plotQ(3) = newQ(3); % plotQ(3) = CalcDobotQ(3)
-            plotQ(4) = newQ(4); % plotQ(4) = CalcDobotQ(4)
-            plotQ(5) = pi/2 - newQ(4) - newQ(3); % plotQ(5) = pi/2 - CalcDobotQ(4) - CalcDobotQ(3)
+            plotQ(1) = newQ(1);
+            plotQ(2) = newQ(2); 
+            plotQ(3) = newQ(3);
+            plotQ(4) = newQ(4);
+            plotQ(5) = pi/2 - newQ(4) - newQ(3);
+
+            plotQ(1) = CalcDobotQ(1); 
+            plotQ(2) = CalcDobotQ(2);
+            plotQ(3) = CalcDobotQ(3);
+            plotQ(4) = CalcDobotQ(4);
+            plotQ(5) = pi/2 - CalcDobotQ(4) - CalcDobotQ(3);
             plotQ(6) = endEffector;
             
             self.L.mlog = {self.L.DEBUG,mfilename('class'),['CalcDobotTo6Dof: trBefore = ',self.L.MatrixToString(trBefore)]};
