@@ -300,7 +300,7 @@ classdef Assignment2Starter < handle
                     selectedTeaLocation = transl(self.ENGLISH_BREAKFAST_LOCATION);
                     self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'English Breakfast tea selected!']};
                     disp('English Breakfast tea selected!');
-                    waypoint = transl(self.ENGLISH_BREAKFAST_LOCATION(1)+0.1,self.ENGLISH_BREAKFAST_LOCATION(2),self.ENGLISH_BREAKFAST_LOCATION(3)+0.35); %waypoint above tea box
+                    waypoint = transl(self.ENGLISH_BREAKFAST_LOCATION(1)+0.15,self.ENGLISH_BREAKFAST_LOCATION(2),self.ENGLISH_BREAKFAST_LOCATION(3)+0.35); %waypoint above tea box
 
                 case 2
                     selectedTeaLocation = transl(self.GREEN_TEA_LOCATION);
@@ -340,7 +340,7 @@ classdef Assignment2Starter < handle
             
             
             self.teaBags{self.orderCount}.goalLocation = self.cups{self.orderCount}.currentLocation*transl(0.02,0,0.1);
-            MoveObject(self, self.teaBags{self.orderCount}, q, 100, 0);     % Pick up teabag and place in cup
+            MoveObject(self, self.teaBags{self.orderCount}, q, 100, 0);     % place in cup
         
             UpdateCup(self, 'teaBag');
             delete(self.teaBags{self.orderCount}.mesh);
@@ -364,18 +364,28 @@ classdef Assignment2Starter < handle
                     
                     self.sugarcubes{i}.goalLocation = self.cups{self.orderCount}.currentLocation*transl(0.02,0.04,0.1);
 
-                    waypoint = transl(self.sugarcubes{i}.currentLocation(1),self.sugarcubes{i}.currentLocation(2),self.sugarcubes{i}.currentLocation(3)+0.5);
+                    waypoint = transl(-0.7,-3.1,1.35); %waypoint before going above sugar canister, stops dobot from hitting tea boxes %TODO FIX! HITTING TEA BOXES STILL
                     self.sugarcubes{self.orderCount}.goalLocation = waypoint;
-                    GetObject(self, self.sugarcubes{i}.goalLocation, qInitial, 50); % go to waypoint before the sugar canister
+                    GetObject(self, self.sugarcubes{i}.goalLocation, qInitial, 50);
+                    waypoint = transl(-0.7,-2.75,1.35); %another waypoint before going above sugar canister, stops dobot from hitting tea boxes %TODO FIX! HITTING TEA BOXES STILL
+                    self.sugarcubes{self.orderCount}.goalLocation = waypoint;
+                    GetObject(self, self.sugarcubes{i}.goalLocation, qInitial, 50);
+
+                    waypoint = transl(self.sugarcubes{i}.currentLocation(1),self.sugarcubes{i}.currentLocation(2),self.sugarcubes{i}.currentLocation(3)+0.5); % waypoint above sugar canister
+                    self.sugarcubes{self.orderCount}.goalLocation = waypoint;
+                    GetObject(self, self.sugarcubes{i}.goalLocation, qInitial, 50); 
 
                     GetObject(self, self.sugarcubes{i}.currentLocation*transl(0,0,0.1), qInitial, 50); % Go to the sugar canister
 
                     self.sugarcubes{i}.goalLocation = waypoint; %waypoint before bringing sugar to cup
                     MoveObject(self, self.sugarcubes{i}, qInitial, 100, 0);
 
-                    self.sugarcubes{i}.goalLocation = self.cups{self.orderCount}.currentLocation;
+                    waypoint = self.cups{self.orderCount}.currentLocation*transl(0.02,0,0.3);% way point above tea cup before placing sugar
+                    self.sugarcubes{i}.goalLocation = waypoint;
+                    MoveObject(self,self.sugarcubes{i},qInitial,100,0);
 
-                    MoveObject(self, self.sugarcubes{i}, qInitial, 100, 0); % Pick up sugercube and place in cup
+                    self.sugarcubes{i}.goalLocation = self.cups{self.orderCount}.currentLocation;
+                    MoveObject(self, self.sugarcubes{i}, qInitial, 100, 0); %place in cup
                     try delete(self.sugarcubes{i}.mesh); end
                 end
             end 
