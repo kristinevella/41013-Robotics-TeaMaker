@@ -6,7 +6,7 @@ classdef Assignment2Starter < handle
         ENGLISH_BREAKFAST_LOCATION = [-1,-1.7,1.2];
         GREEN_TEA_LOCATION = [-0.7,-1.7,1.2];
         LEMON_GINGER_TEA_LOCATION = [-0.4,-1.7,1.2];
-        SPOON_LOCATION = [-0.45 ,-2.2,1.3]
+        SPOON_LOCATION = [-0.5,-2.2,1.3]
         BARRIER_HEIGHT_MIN = 1;
         BARRIER_HEIGHT_MAX = 2.5;
         CUP_TOTAL = 3;
@@ -82,7 +82,7 @@ classdef Assignment2Starter < handle
             DispenseLiquid(self, self.WATER_LOCATION, self.qz, 'b', 'water');    % remove TODO [-1,-2.35,1.3]                        
             GetTeaBag(self, self.qz, teaType);
             GetSugar(self, self.qz, sugarQuantity);
-            GetMilk(self, self.qz, milkType);
+            GetMilk(self, [-0.6,deg2rad(30),deg2rad(45),deg2rad(45)], milkType);
             FindCoaster(self);
             StirTea(self);                                                  % Uses RMRC
             ResetPosition(self);
@@ -192,13 +192,9 @@ classdef Assignment2Starter < handle
                 self.coasters{i} = MoveableObject('coaster.ply');
             end
 
-            self.coasters{1}.Move(transl(-0.38,-2.5,1.04));
-            self.coasters{2}.Move(transl(-0.38,-2.7,1.04));
-            self.coasters{3}.Move(transl(-0.38,-2.9,1.04));
-
-            self.cups{1}.Move(transl(-0.9,-3.5,1.12));
-            self.cups{2}.Move(transl(-0.7,-3.5,1.12));
-            self.cups{3}.Move(transl(-0.5,-3.5,1.12));
+            self.coasters{1}.Move(transl(-0.45,-2.5,1.04));
+            self.coasters{2}.Move(transl(-0.45,-2.7,1.04));
+            self.coasters{3}.Move(transl(-0.45,-2.9,1.04));
 
             self.cups{1}.Move(transl(-0.55,-3.1,1.12));
             self.cups{2}.Move(transl(-0.55,-3.27,1.12));
@@ -285,6 +281,7 @@ classdef Assignment2Starter < handle
             GetObject(self, self.cups{self.orderCount}.currentLocation*transl(-0.05,0.05,0.13), qInitial, 50);        
             self.cups{self.orderCount}.goalLocation = location*transl(0.02,0.05,0.1);
             MoveObject(self, self.cups{self.orderCount}, qInitial, 50, rotation);
+            self.cups{self.orderCount}.rotation = rotation;
         end
         
         %% GetTeaBag
@@ -406,12 +403,10 @@ classdef Assignment2Starter < handle
                     disp('No milk selected!');
                 case 1                                                      % Regular
                     selectedMilkLocation = self.REGULAR_MILK_LOCATION;
-                    location = [-1,-3.05,1.3];
                     self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'Full Cream milk selected!']};
                     disp('Full Cream milk selected!');
                 case 2                                                      % Skim
                     selectedMilkLocation = self.SKIM_MILK_LOCATION;
-                    location = [-1,-2.75,1.3];
                     self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'Skim milk selected!']};
                     disp('Skim milk selected!');
                 otherwise
@@ -421,10 +416,10 @@ classdef Assignment2Starter < handle
             end
         
             if milkType > 0
-                GetObject(self, self.cups{self.orderCount}.currentLocation, qInitial, 50); % Get the cup
-                self.cups{self.orderCount}.goalLocation = transl(selectedMilkLocation)*transl(0,0,0.1); %0.03 in Z
+                GetObject(self, self.cups{self.orderCount}.currentLocation*transl(0,0,0.1), qInitial, 50); % Get the cup
+                self.cups{self.orderCount}.goalLocation = transl(selectedMilkLocation)*transl(0.03,0,0.1);
                 MoveObject(self, self.cups{self.orderCount}, qInitial, 100, 0); % Pick up cup and move to under milk dispenser
-                DispenseLiquid(self, location, qInitial, 'w', 'milk');
+                DispenseLiquid(self, selectedMilkLocation, qInitial, 'w', 'milk');
             end 
         end
         
@@ -436,10 +431,10 @@ classdef Assignment2Starter < handle
                 pause(1);
             end
         
-            q = self.qz; % ** Change q to suit 
-            GetObject(self, self.cups{self.orderCount}.currentLocation, q, 50);
-            self.cups{self.orderCount}.goalLocation = self.coasters{self.orderCount}.currentLocation; % transl(-0.44,-2.5,1.3);
-            MoveObject(self, self.cups{self.orderCount}, q, 50, -pi);       % Pick up cup and move to coaster
+            GetObject(self, self.cups{self.orderCount}.currentLocation*transl(-0.01,-0.01,0.1), [-0.6,deg2rad(30),deg2rad(45),deg2rad(45)], 50);
+            self.cups{self.orderCount}.goalLocation = self.coasters{self.orderCount}.currentLocation*transl(-0.18,0.04,0.22);
+            self.cups{self.orderCount}.rotation = -pi;
+            MoveObject(self, self.cups{self.orderCount}, [-1,deg2rad(135),deg2rad(45),deg2rad(45)], 50, pi);       % Pick up cup and move to coaster
         end
         
         %% StirTea
@@ -449,8 +444,8 @@ classdef Assignment2Starter < handle
                 self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'EMERGENCY STOP']};
                 pause(1);
             end
-            GetObject(self, self.spoon.currentLocation, self.qz, 50);
-            self.spoon.goalLocation = self.cups{self.orderCount}.currentLocation;
+            GetObject(self, self.spoon.currentLocation*transl(0,-0.03,0.08), self.qz, 50);
+            self.spoon.goalLocation = self.cups{self.orderCount}.currentLocation*transl(0.12,-0.05,0.12);
             MoveObject(self, self.spoon, self.qz, 50, 0);
             rmrc = ResolvedMotionRateControl(self.calcDobot,self.robot.model,self.debug,self.h); % TODO add logging in the class
             if self.debug
@@ -585,7 +580,9 @@ classdef Assignment2Starter < handle
             self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'MoveObject: Checking new result using fkine: ', self.L.MatrixToString(tr)]};
             
             modelTraj = jtraj(self.robot.model.getpos,newQ,steps);
+            
             if endEffector ~= 0
+                endEffector = endEffector;
                 objectRotationTraj = (1/endEffector):((endEffector-(1/endEffector))/steps):endEffector;
             end
         
@@ -597,9 +594,9 @@ classdef Assignment2Starter < handle
                 self.robot.model.animate(modelTraj(i,:));
                 modelTr = self.robot.model.fkine(modelTraj(i,:));
                 if endEffector ~= 0 
-                    R = trotz(objectRotationTraj(i));
+                    R = trotz(objectRotationTraj(i))*trotz(object.rotation);
                 else 
-                    R = object.currentLocation; %trotz(0);
+                    R = object.currentLocation;
                 end
                 modelTr(1:3,1:3) = eye(3)*R(1:3,1:3); %Don't change object's rotation
                 object.Move(modelTr);

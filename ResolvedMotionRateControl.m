@@ -129,8 +129,8 @@ classdef ResolvedMotionRateControl
         %% SetCircularTrajectory
         function self = SetCircularTrajectory(self, T)
             for i=1:self.steps
-                self.x(1,i) = T(1,4) + 0.03*cos(self.deltaT*i); % Points in x
-                self.x(2,i) = T(2,4) + 0.03*sin(self.deltaT*i); % Points in y
+                self.x(1,i) = T(1,4) + 0.05 + 0.02*cos(self.deltaT*i); % Points in x
+                self.x(2,i) = T(2,4) + 0.02 + 0.02*sin(self.deltaT*i); % Points in y
                 self.x(3,i) = T(3,4);                           % Points in z
             end
             self.T = [eye(3) self.x(:,1); zeros(1,3) 1]; 

@@ -10,6 +10,9 @@ classdef MoveableObject < handle
         vertices;
         tVertices;
 
+        %> Rotation
+        rotation = 0;
+
         %> Initial location of the object
         currentLocation;
 
