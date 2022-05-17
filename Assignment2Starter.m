@@ -648,7 +648,7 @@ classdef Assignment2Starter < handle
             self.L.mlog = {self.L.DEBUG,mfilename('class'),['CalcDobotTo6Dof: CalcDobotQ = ', self.L.MatrixToString(CalcDobotQ)]};
 %             self.L.mlog = {self.L.DEBUG,mfilename('class'),['CalcDobotTo6Dof: newQ = ', self.L.MatrixToString(newQ)]};
 %             self.L.mlog = {self.L.DEBUG,mfilename('class'),['CalcDobotTo6Dof: plotQ = ', self.L.MatrixToString(plotQ)]};
-%         end
+         end
 
         %% Collision Detection - derrived from Lab6Solution
         function result = IsCollision(self,robot, radii, centerPoint, qMatrix, points, L, h)
