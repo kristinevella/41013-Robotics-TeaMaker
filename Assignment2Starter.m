@@ -105,7 +105,7 @@ classdef Assignment2Starter < handle
 
         %% InitialiseRobot
         function InitialiseRobot(self)
-            self.L.mlog = {self.L.DEBUG,mfilename('class'),['InitialiseRobot: ','Called']};
+            self.L.mlog = {self.L.DEBUG,mfilename('class'),'InitialiseRobot: Called'};
             self.robot = Dobot(false);
             self.robot.model.base = self.robot.model.base * transl(-0.7,-3.3,1.08) * trotx(pi/2);
             q = self.robot.model.getpos();
@@ -114,7 +114,7 @@ classdef Assignment2Starter < handle
 
         %% InitialiseCalcRobot
         function InitialiseCalcRobot(self)
-            self.L.mlog = {self.L.DEBUG, mfilename('class'),['InitialiseCalcRobot: ', 'Called"']};
+            self.L.mlog = {self.L.DEBUG, mfilename('class'),'InitialiseCalcRobot: Called'};
 
             self.calcDobot = ThreeLinkDobot(false);
             self.calcDobot.model.base = self.calcDobot.model.base *  transl(-0.7,-3.3,1.08) * trotx(pi/2);
@@ -124,7 +124,7 @@ classdef Assignment2Starter < handle
         function InitialiseEllipsoids(self)
             visualise = false;                                              % Set to true if wanting to visualise ellipsoids
 
-            self.L.mlog = {self.L.DEBUG,mfilename('class'),['InitialiseEllipsoids: ','Called']};
+            self.L.mlog = {self.L.DEBUG,mfilename('class'),'InitialiseEllipsoids: Called'};
             self.centerPoint = [0,0,0];
             self.radii{1} = [0.1,0.1,0.1];
             self.radii{2} = [0.1,0.15,0.1];
@@ -151,7 +151,7 @@ classdef Assignment2Starter < handle
 
         %% SetUpEnvironment
         function SetUpEnvironment(self)
-            self.L.mlog = {self.L.DEBUG,mfilename('class'),['SetUpEnvironment: ','Called']};
+            self.L.mlog = {self.L.DEBUG,mfilename('class'),'SetUpEnvironment: Called'};
             disp('Initialising the environment...')
             
             hold on
@@ -225,6 +225,7 @@ classdef Assignment2Starter < handle
 
         %% PlaceCollidableItem
         function PlaceCollidableItem(self, location)
+            self.L.mlog = {self.L.DEBUG,mfilename('class'),'PlaceCollidableItem: Called'};
             try delete(self.sprayBottle.mesh); end
             self.sprayBottle = MoveableObject('sprayBottle.ply');
             self.sprayBottle.Move(transl(location));
@@ -237,13 +238,14 @@ classdef Assignment2Starter < handle
         
         %% SimulateWarningSign
         function SimulateWarningSign(self)
+            self.L.mlog = {self.L.DEBUG,mfilename('class'),'SimulateWarningSign: Called'};
             self.warningsign = MoveableObject('warningsign.ply'); 
             self.warningsign.Move(transl(-1,-2.3,1.2));                     % Warning sign simulated at hot water dispenser
         end
 
         %% LowerBarriers
         function LowerBarriers(self)
-            self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'Called']};
+            self.L.mlog = {self.L.DEBUG,mfilename('class'),'LowerBarriers: Called'};
             if self.frontBarrier.ZData(1,2) && self.sideBarrier.ZData(1,2) == self.BARRIER_HEIGHT_MAX
                 for i = self.BARRIER_HEIGHT_MAX:-0.01:self.BARRIER_HEIGHT_MIN
                     self.frontBarrier.ZData(:,2) = i;
@@ -258,7 +260,7 @@ classdef Assignment2Starter < handle
 
         %% RaiseBarriers
         function RaiseBarriers(self)
-            self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'Called']};
+            self.L.mlog = {self.L.DEBUG,mfilename('class'),'RaiseBarriers: Called'};
             if self.frontBarrier.ZData(1,2) == self.BARRIER_HEIGHT_MIN && self.sideBarrier.ZData(1,2) == self.BARRIER_HEIGHT_MIN
                 for i = self.BARRIER_HEIGHT_MIN:0.01:self.BARRIER_HEIGHT_MAX
                     self.frontBarrier.ZData(:,2) = i;
@@ -273,7 +275,7 @@ classdef Assignment2Starter < handle
 
         %% GetCup
         function GetCup(self, qInitial, rotation, location)
-            self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'Called']};
+            self.L.mlog = {self.L.DEBUG,mfilename('class'),'GetCup: Called'};
             while self.h %Check for emergency stop
                 self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'EMERGENCY STOP']};
                 pause(1);
@@ -286,7 +288,7 @@ classdef Assignment2Starter < handle
         
         %% GetTeaBag
         function GetTeaBag(self, qInitial, teaType)
-            self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'Called']};
+            self.L.mlog = {self.L.DEBUG,mfilename('class'),'GetTeaBag: Called'};
             while self.h                                                    % Check for emergency stop
                 self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'EMERGENCY STOP']};
                 pause(1);
@@ -333,7 +335,7 @@ classdef Assignment2Starter < handle
         
         %% GetSugar
         function GetSugar(self, qInitial, sugarQuantity)
-            self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'Called']};
+            self.L.mlog = {self.L.DEBUG,mfilename('class'),'GetSugar: Called'};
             self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,num2str(sugarQuantity),' portions of sugar selected!']};
             disp([num2str(sugarQuantity),' portions of sugar selected!']);
         
@@ -355,7 +357,7 @@ classdef Assignment2Starter < handle
         
         %% GetMilk
         function GetMilk(self, qInitial, milkType)
-            self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'Called']};
+            self.L.mlog = {self.L.DEBUG,mfilename('class'),'GetMilk: Called'};
             while self.h %Check for emergency stop
                 self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'EMERGENCY STOP']};
                 pause(1);
@@ -393,7 +395,7 @@ classdef Assignment2Starter < handle
         
         %% FindCoaster - Pickup cup and place on appropriate available coaster
         function FindCoaster(self)
-            self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'Called']};
+            self.L.mlog = {self.L.DEBUG,mfilename('class'),'FindCoaster: Called'};
             while self.h                                                    % Check for emergency stop
                 self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'EMERGENCY STOP']};
                 pause(1);
@@ -407,7 +409,7 @@ classdef Assignment2Starter < handle
         
         %% StirTea
         function StirTea(self)
-            self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'Called']};
+            self.L.mlog = {self.L.DEBUG,mfilename('class'),'StirTea: Called'};
             while self.h                                                    % Check for emergency stop
                 self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'EMERGENCY STOP']};
                 pause(1);
@@ -448,7 +450,7 @@ classdef Assignment2Starter < handle
 
         %% ResetPosition
         function ResetPosition(self)
-            self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'Called']};
+            self.L.mlog = {self.L.DEBUG,mfilename('class'),'ResetPosition: Called'};
             while self.h                                                    % Check for emergency stop
                 self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'EMERGENCY STOP']};
                 pause(1);
@@ -470,6 +472,7 @@ classdef Assignment2Starter < handle
         
         %% Demonstrate Visual Servoing
         function DemoVisualServoing(self)
+            self.L.mlog = {self.L.DEBUG,mfilename('class'),'DemoVisualServoing: Called'};
             RaiseBarriers(self)
             q0 = MoveToTeaArea(self,self.qz,100);
             SimulateWarningSign(self);
@@ -478,7 +481,7 @@ classdef Assignment2Starter < handle
 
         %% Reset Simulation
         function ResetSimulation(self)
-            self.L.mlog = {self.L.DEBUG,mfilename('class'),['ResetSimulation: ','Called']};
+            self.L.mlog = {self.L.DEBUG,mfilename('class'),'ResetSimulation: Called'};
             disp('Resetting the environment...')
 
             for i = 1:self.CUP_TOTAL                                        % Reset cups
@@ -500,7 +503,7 @@ classdef Assignment2Starter < handle
 
         %% GetObject - Moves the end effector of the robot model to a set position
         function GetObject(self, location, q, steps)
-            self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'Called']};
+            self.L.mlog = {self.L.DEBUG,mfilename('class'),'GetObject: Called'};
             while self.h %Check for emergency stop
                 self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'EMERGENCY STOP']};
                 pause(1);
@@ -529,7 +532,7 @@ classdef Assignment2Starter < handle
         
         %% MoveObject - Moves the object with the robot end effector to a set location
         function MoveObject(self, object, q, steps, endEffector)
-            self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'Called']};
+            self.L.mlog = {self.L.DEBUG,mfilename('class'),'MoveObject: Called'};
             while self.h                                                    % Check for emergency stop
                 self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'EMERGENCY STOP']};
                 pause(1);
@@ -569,6 +572,7 @@ classdef Assignment2Starter < handle
         
         %% DispenseLiquid
         function DispenseLiquid(self, location, q, colour, teaStage)
+            self.L.mlog = {self.L.DEBUG,mfilename('class'),'DispenseLiquid: Called'};
             figure(1)    
             GetObject(self, transl(location), q, 50);
             liquid = surf([location(1,1)-0.03,location(1,1)-0.03;location(1,1)-0.03,location(1,1)-0.03],[location(1,2)+0.03,location(1,2)+0.03;location(1,2)+0.05,location(1,2)+0.05],[1,location(1,3)-0.15;1,location(1,3)-0.15],'CData',flip(imread('glass.jpg')),'FaceColor','texturemap','FaceAlpha',0.9,'EdgeColor',colour);
@@ -579,6 +583,7 @@ classdef Assignment2Starter < handle
         
         %% UpdateCup - Update the appearance of the cup to match contents
         function UpdateCup(self, teaStage)
+            self.L.mlog = {self.L.DEBUG,mfilename('class'),'UpdateCup: Called'};
             %figure(1);                                                      %% plotted figures in other functions cause the teabag to plot on a different plot
             currentLocation = self.cups{self.orderCount}.currentLocation;
             try delete(self.cups{self.orderCount}.mesh); end
@@ -597,6 +602,7 @@ classdef Assignment2Starter < handle
 
         %% CalcDobotTo6Dof - Used to simplfy the calculations on the Dobot due to the hardware limitations of the actual Dobot
         function plotQ = CalcDobotTo6Dof(self, CalcDobotQ, endEffector)
+            self.L.mlog = {self.L.DEBUG,mfilename('class'),'CalcDobotTo6Dof: Called'};
             % Find the location of the calcDobot
             trBefore = self.calcDobot.model.fkine(CalcDobotQ);
             % Modify the end effector location, and add end effector
@@ -626,11 +632,11 @@ classdef Assignment2Starter < handle
             plotQ(5) = pi/2 - newQ(4) - newQ(3); % plotQ(5) = pi/2 - CalcDobotQ(4) - CalcDobotQ(3)
             plotQ(6) = endEffector;
             
-            self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'trBefore = ',self.L.MatrixToString(trBefore)]};
-            self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'trAfter = ',self.L.MatrixToString(trAfter)]};
-            self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'CalcDobotQ = ', self.L.MatrixToString(CalcDobotQ)]};
-            self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'newQ = ', self.L.MatrixToString(newQ)]};
-            self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'plotQ = ', self.L.MatrixToString(plotQ)]};
+            self.L.mlog = {self.L.DEBUG,mfilename('class'),['CalcDobotTo6Dof: trBefore = ',self.L.MatrixToString(trBefore)]};
+            self.L.mlog = {self.L.DEBUG,mfilename('class'),['CalcDobotTo6Dof: trAfter = ',self.L.MatrixToString(trAfter)]};
+            self.L.mlog = {self.L.DEBUG,mfilename('class'),['CalcDobotTo6Dof: CalcDobotQ = ', self.L.MatrixToString(CalcDobotQ)]};
+            self.L.mlog = {self.L.DEBUG,mfilename('class'),['CalcDobotTo6Dof: newQ = ', self.L.MatrixToString(newQ)]};
+            self.L.mlog = {self.L.DEBUG,mfilename('class'),['CalcDobotTo6Dof: plotQ = ', self.L.MatrixToString(plotQ)]};
         end
 
         %% Collision Detection - derrived from Lab6Solution
