@@ -78,7 +78,7 @@ classdef Assignment2Starter < handle
 
             self.lightCurtain_h = InitialiseLightCurtain(self);
             RaiseBarriers(self);      
-            GetCup(self, [1,deg2rad(135),deg2rad(45),deg2rad(45)], -pi, transl(self.WATER_LOCATION));%*transl(-0.1,0,-0.08)); %transl(-1,-2.3,1.28));                % Pickup cup and place under the water dispenser
+            GetCup(self, [1,deg2rad(135),deg2rad(45),deg2rad(45)], -pi, transl(self.WATER_LOCATION));            % Pickup cup and place under the water dispenser
             DispenseLiquid(self, self.WATER_LOCATION, self.qz, 'b', 'water');    % remove TODO [-1,-2.35,1.3]                        
             GetTeaBag(self, self.qz, teaType);
             GetSugar(self, self.qz, sugarQuantity);
@@ -282,8 +282,8 @@ classdef Assignment2Starter < handle
                 pause(1);
             end
 
-            GetObject(self, self.cups{self.orderCount}.currentLocation, qInitial, 50);        
-            self.cups{self.orderCount}.goalLocation = location;
+            GetObject(self, self.cups{self.orderCount}.currentLocation*transl(-0.05,0.05,0.13), qInitial, 50);        
+            self.cups{self.orderCount}.goalLocation = location*transl(0.02,0.05,0.1);
             MoveObject(self, self.cups{self.orderCount}, qInitial, 50, rotation);
         end
         
@@ -326,7 +326,7 @@ classdef Assignment2Starter < handle
             self.teaBags{self.orderCount} = MoveableObject('teabag.ply');   % Instantiate new tea bag
             self.teaBags{self.orderCount}.Move(selectedTeaLocation);
         
-            self.teaBags{self.orderCount}.goalLocation = self.cups{self.orderCount}.currentLocation;
+            self.teaBags{self.orderCount}.goalLocation = self.cups{self.orderCount}.currentLocation*transl(0.02,0,0.1);
             q = self.qz;
             MoveObject(self, self.teaBags{self.orderCount}, q, 100, 0);     % Pick up teabag and place in cup
         
@@ -347,9 +347,9 @@ classdef Assignment2Starter < handle
                         pause(1);
                     end
                     self.sugarcubes{i} = MoveableObject('sugarcube.ply'); 
-                    self.sugarcubes{i}.Move(transl(-0.45 ,-2.2,1.05));
-                    GetObject(self, self.sugarcubes{i}.currentLocation, qInitial, 50); % Go to the sugar canister
-                    self.sugarcubes{i}.goalLocation = self.cups{self.orderCount}.currentLocation;
+                    self.sugarcubes{i}.Move(transl(-0.45,-2.2,1.05));
+                    GetObject(self, self.sugarcubes{i}.currentLocation*transl(0,0,0.1), qInitial, 50); % Go to the sugar canister
+                    self.sugarcubes{i}.goalLocation = self.cups{self.orderCount}.currentLocation*transl(0.02,0.04,0.1);
                     MoveObject(self, self.sugarcubes{i}, qInitial, 100, 0); % Pick up sugercube and place in cup
                     try delete(self.sugarcubes{i}.mesh); end
                 end
@@ -370,12 +370,12 @@ classdef Assignment2Starter < handle
                     self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'No milk selected!']};
                     disp('No milk selected!');
                 case 1                                                      % Regular
-                    selectedMilkLocation = [-1,-3.0,1.23]; %self.REGULAR_MILK_LOCATION;
+                    selectedMilkLocation = self.REGULAR_MILK_LOCATION;
                     location = [-1,-3.05,1.3];
                     self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'Full Cream milk selected!']};
                     disp('Full Cream milk selected!');
                 case 2                                                      % Skim
-                    selectedMilkLocation = [-1,-2.7,1.23]; %self.SKIM_MILK_LOCATION;
+                    selectedMilkLocation = self.SKIM_MILK_LOCATION;
                     location = [-1,-2.75,1.3];
                     self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'Skim milk selected!']};
                     disp('Skim milk selected!');
@@ -385,10 +385,9 @@ classdef Assignment2Starter < handle
                     return
             end
         
-            %% Need to add way points so it doesn't go through the containers
             if milkType > 0
                 GetObject(self, self.cups{self.orderCount}.currentLocation, qInitial, 50); % Get the cup
-                self.cups{self.orderCount}.goalLocation = transl(selectedMilkLocation);
+                self.cups{self.orderCount}.goalLocation = transl(selectedMilkLocation)*transl(0,0,0.1); %0.03 in Z
                 MoveObject(self, self.cups{self.orderCount}, qInitial, 100, 0); % Pick up cup and move to under milk dispenser
                 DispenseLiquid(self, location, qInitial, 'w', 'milk');
             end 
@@ -514,12 +513,12 @@ classdef Assignment2Starter < handle
         
             q = self.calcDobot.model.ikcon(location,q); 
             tr = self.calcDobot.model.fkine(q);
-            self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'Set of joints to pick up object at ',self.L.MatrixToString(location),' = ',self.L.MatrixToString(q)]};
-            self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'Checking result using fkine: ', self.L.MatrixToString(tr)]};
+            self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'GetObject: Set of joints to pick up object at ',self.L.MatrixToString(location),' = ',self.L.MatrixToString(q)]};
+            self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'GetObject: Checking result using fkine: ', self.L.MatrixToString(tr)]};
         
             newQ = CalcDobotTo6Dof(self,q,0);
             tr = self.robot.model.fkine(newQ);
-            self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'Checking result using fkine: ', self.L.MatrixToString(tr)]};
+            self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'GetObject: Checking new result using fkine: ', self.L.MatrixToString(tr)]};
 
             modelTraj = jtraj(self.robot.model.getpos,newQ,steps);
         
@@ -543,12 +542,12 @@ classdef Assignment2Starter < handle
         
             q = self.calcDobot.model.ikcon(object.goalLocation,q);
             tr = self.calcDobot.model.fkine(q);
-            self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'Set of joints to drop off object at ',self.L.MatrixToString(object.goalLocation),' = ',self.L.MatrixToString(q)]};
-            self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'Checking result using fkine: ', self.L.MatrixToString(tr)]};
+            self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'MoveObject: Set of joints to drop off object at ',self.L.MatrixToString(object.goalLocation),' = ',self.L.MatrixToString(q)]};
+            self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'MoveObject: Checking result using fkine: ', self.L.MatrixToString(tr)]};
         
             newQ = CalcDobotTo6Dof(self,q,endEffector);
             tr = self.robot.model.fkine(newQ);
-            self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'Checking result using fkine: ', self.L.MatrixToString(tr)]};
+            self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'MoveObject: Checking new result using fkine: ', self.L.MatrixToString(tr)]};
             
             modelTraj = jtraj(self.robot.model.getpos,newQ,steps);
             if endEffector ~= 0
@@ -577,8 +576,8 @@ classdef Assignment2Starter < handle
         function DispenseLiquid(self, location, q, colour, teaStage)
             self.L.mlog = {self.L.DEBUG,mfilename('class'),'DispenseLiquid: Called'};
             figure(1)    
-            GetObject(self, transl(location), q, 50);
-            liquid = surf([location(1,1)-0.03,location(1,1)-0.03;location(1,1)-0.03,location(1,1)-0.03],[location(1,2)+0.03,location(1,2)+0.03;location(1,2)+0.05,location(1,2)+0.05],[1,location(1,3)-0.15;1,location(1,3)-0.15],'CData',flip(imread('glass.jpg')),'FaceColor','texturemap','FaceAlpha',0.9,'EdgeColor',colour);
+            GetObject(self, transl(location)*transl(-0.05,-0.05,0.1), q, 50);
+            liquid = surf([location(1,1)-0.03,location(1,1)-0.03;location(1,1)-0.03,location(1,1)-0.03],[location(1,2)-0.02,location(1,2)-0.02;location(1,2),location(1,2)],[1,location(1,3)-0.05;1,location(1,3)-0.05],'CData',flip(imread('glass.jpg')),'FaceColor','texturemap','FaceAlpha',0.9,'EdgeColor',colour);
             pause(3);
             delete(liquid);
             UpdateCup(self, teaStage);
@@ -645,7 +644,7 @@ classdef Assignment2Starter < handle
             
 %             self.L.mlog = {self.L.DEBUG,mfilename('class'),['CalcDobotTo6Dof: trBefore = ',self.L.MatrixToString(trBefore)]};
 %             self.L.mlog = {self.L.DEBUG,mfilename('class'),['CalcDobotTo6Dof: trAfter = ',self.L.MatrixToString(trAfter)]};
-            self.L.mlog = {self.L.DEBUG,mfilename('class'),['CalcDobotTo6Dof: CalcDobotQ = ', self.L.MatrixToString(CalcDobotQ)]};
+            self.L.mlog = {self.L.DEBUG,mfilename('class'),['CalcDobotTo6Dof: plotQ = ', self.L.MatrixToString(plotQ)]};
 %             self.L.mlog = {self.L.DEBUG,mfilename('class'),['CalcDobotTo6Dof: newQ = ', self.L.MatrixToString(newQ)]};
 %             self.L.mlog = {self.L.DEBUG,mfilename('class'),['CalcDobotTo6Dof: plotQ = ', self.L.MatrixToString(plotQ)]};
          end
