@@ -331,9 +331,14 @@ classdef Assignment2Starter < handle
             self.teaBags{self.orderCount}.Move(selectedTeaLocation);
         
             q = self.qz; % ** Change q to suit
-            self.teaBags{self.orderCount}.goalLocation = waypoint;
-            MoveObject(self,self.teaBags{self.orderCount},q,100,0);% way point before bringing tea bag to cup
+            self.teaBags{self.orderCount}.goalLocation = waypoint;% way point above tea box before bringing tea bag to cup
+            MoveObject(self,self.teaBags{self.orderCount},q,100,0);
 
+            waypoint = self.cups{self.orderCount}.currentLocation*transl(0.02,0,0.3);% way point above tea cup before placing tea bag
+            self.teaBags{self.orderCount}.goalLocation = waypoint;
+            MoveObject(self,self.teaBags{self.orderCount},q,100,0);
+            
+            
             self.teaBags{self.orderCount}.goalLocation = self.cups{self.orderCount}.currentLocation*transl(0.02,0,0.1);
             MoveObject(self, self.teaBags{self.orderCount}, q, 100, 0);     % Pick up teabag and place in cup
         
