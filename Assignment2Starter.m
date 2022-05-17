@@ -443,11 +443,16 @@ classdef Assignment2Starter < handle
                 self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'EMERGENCY STOP']};
                 pause(1);
             end
-        
+
             GetObject(self, self.cups{self.orderCount}.currentLocation*transl(-0.01,-0.01,0.1), [-0.6,deg2rad(30),deg2rad(45),deg2rad(45)], 50);
+
+            waypoint = transl(-0.7,-3.1,1.35); %waypoint to go to end of rail before placing coaster
+            self.cups{self.orderCount}.goalLocation = waypoint;
+            MoveObject(self, self.cups{self.orderCount}, [-1,deg2rad(135),deg2rad(45),deg2rad(45)], 100, 0);
+
             self.cups{self.orderCount}.goalLocation = self.coasters{self.orderCount}.currentLocation*transl(-0.18,0.04,0.22);
             self.cups{self.orderCount}.rotation = -pi;
-            MoveObject(self, self.cups{self.orderCount}, [-1,deg2rad(135),deg2rad(45),deg2rad(45)], 50, pi);       % Pick up cup and move to coaster
+            MoveObject(self, self.cups{self.orderCount}, [-0.0883,-2.1192,0.0873,0.8586], 50, pi);       % Pick up cup and move to coaster
         end
         
         %% StirTea
