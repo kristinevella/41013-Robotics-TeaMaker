@@ -39,6 +39,7 @@ classdef Assignment2Starter < handle
         radii;
         centerPoint;
         lightCurtainPoints;
+        lightCurtain_h;
 
     end
     methods
@@ -75,7 +76,7 @@ classdef Assignment2Starter < handle
                 return;
             end
 
-            lightCurtain_h = InitialiseLightCurtain(self);
+            self.lightCurtain_h = InitialiseLightCurtain(self);
             RaiseBarriers(self);      
             GetCup(self, [1,deg2rad(135),deg2rad(45),deg2rad(45)], -pi, transl(self.WATER_LOCATION));%*transl(-0.1,0,-0.08)); %transl(-1,-2.3,1.28));                % Pickup cup and place under the water dispenser
             DispenseLiquid(self, self.WATER_LOCATION, self.qz, 'b', 'water');    % remove TODO [-1,-2.35,1.3]                        
@@ -92,7 +93,7 @@ classdef Assignment2Starter < handle
             end
             
             LowerBarriers(self);
-            delete(lightCurtain_h);
+            delete(self.lightCurtain_h);
             self.lightCurtainPoints = [];
 
             self.orderCount = self.orderCount + 1;
@@ -499,6 +500,8 @@ classdef Assignment2Starter < handle
             self.orderCount = 1;                                            % Reset order count
 
             try delete(self.warningsign.mesh); end                          % Delete warning sign
+            delete(self.lightCurtain_h);                                    % Stop light curtain
+            self.lightCurtainPoints = [];
         end
 
         %% GetObject - Moves the end effector of the robot model to a set position
@@ -714,6 +717,10 @@ classdef Assignment2Starter < handle
                 end
             end
             for i=1:size(qMatrix,1)
+                while h %Check for emergency stop
+                    L.mlog = {L.DEBUG,mfilename('class'),['AvoidCollisions: ','EMERGENCY STOP']};
+                    pause(1);
+                end
                 newQMatrix = CalcDobotTo6Dof(self,qMatrix(i,:),0);
                 robot.model.animate(newQMatrix);
                 pause(0.05);
@@ -802,7 +809,6 @@ classdef Assignment2Starter < handle
             [X,Z] = meshgrid(-0.7:0.01:0.7,0:0.07:0.8);
             sizeMat = size(X);
             Y = repmat(0.75,sizeMat(1),sizeMat(2));
-            %lightCurtainSurf_h = surf(X,Y,Z);
             self.lightCurtainPoints = [X(:),Y(:),Z(:)]; % Combine one surface as a point cloud
             self.lightCurtainPoints = self.lightCurtainPoints + repmat([-0.75,-2.2,1.05],size(self.lightCurtainPoints,1),1);
             lightCurtain_h = plot3(self.lightCurtainPoints(:,1),self.lightCurtainPoints(:,2),self.lightCurtainPoints(:,3),'r.');
@@ -894,6 +900,12 @@ function IdealQs = MoveToTeaArea(self, q, steps)
 end
 %% Visual servoing code to retreat from warning sign
 function VisualServoingForSign(self,q0,object) %adapted from Lab 8 visual servoing code
+            self.L.mlog = {self.L.DEBUG,mfilename('class'),['VisualServoingForSign: ','Called']};
+            while self.h %Check for emergency stop
+                self.L.mlog = {self.L.DEBUG,mfilename('class'),['VisualServoingForSign: ','EMERGENCY STOP']};
+                pause(1);
+            end
+
             % Create image target          
             signStar = [  953.0248  898.4115  898.4115  953.0248
                           547.3127  547.3127  601.9260  601.9260]; 
@@ -952,6 +964,10 @@ function VisualServoingForSign(self,q0,object) %adapted from Lab 8 visual servoi
             % loop of the visual servoing
             ksteps = 0;
              while true
+                 while self.h %Check for emergency stop
+                    self.L.mlog = {self.L.DEBUG,mfilename('class'),['VisualServoingForSign: ','EMERGENCY STOP']};
+                    pause(1);
+                end
                     ksteps = ksteps + 1;
                     
                     % compute the view of the camera
@@ -1034,9 +1050,7 @@ function VisualServoingForSign(self,q0,object) %adapted from Lab 8 visual servoi
                     end
                     
                     %update current joint position
-                    q0 = q';
-
-                    
+                    q0 = q';                
              end
              
             %% 1.5 Plot results
