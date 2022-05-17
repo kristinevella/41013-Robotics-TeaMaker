@@ -3,9 +3,9 @@ classdef Assignment2Starter < handle
         WATER_LOCATION = [-1,-2.3,1.2];
         SKIM_MILK_LOCATION = [-1,-2.7,1.2];
         REGULAR_MILK_LOCATION = [-1,-3,1.2];
-        ENGLISH_BREAKFAST_LOCATION = [-1,-1.7,1.2];
-        GREEN_TEA_LOCATION = [-0.7,-1.7,1.2];
-        LEMON_GINGER_TEA_LOCATION = [-0.4,-1.7,1.2];
+        ENGLISH_BREAKFAST_LOCATION = [-1,-1.7,1.12];
+        GREEN_TEA_LOCATION = [-0.7,-1.7,1.12];
+        LEMON_GINGER_TEA_LOCATION = [-0.4,-1.7,1.12];
         SPOON_LOCATION = [-0.5,-2.2,1.3]
         BARRIER_HEIGHT_MIN = 1;
         BARRIER_HEIGHT_MAX = 2.5;
@@ -297,7 +297,7 @@ classdef Assignment2Starter < handle
                     selectedTeaLocation = transl(self.ENGLISH_BREAKFAST_LOCATION);
                     self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'English Breakfast tea selected!']};
                     disp('English Breakfast tea selected!');
-                    waypoint = transl(self.ENGLISH_BREAKFAST_LOCATION(1)+0.15,self.ENGLISH_BREAKFAST_LOCATION(2),self.ENGLISH_BREAKFAST_LOCATION(3)+0.35); %waypoint above tea box
+                    waypoint = transl(-0.7918,-2.1778,1.4571); %selectedTeaLocation*transl(0,0,0.19); %transl(self.ENGLISH_BREAKFAST_LOCATION(1)+0.15,self.ENGLISH_BREAKFAST_LOCATION(2),self.ENGLISH_BREAKFAST_LOCATION(3)+0.35); %waypoint above tea box
 
                 case 2
                     selectedTeaLocation = transl(self.GREEN_TEA_LOCATION);
@@ -334,8 +334,7 @@ classdef Assignment2Starter < handle
             waypoint = self.cups{self.orderCount}.currentLocation*transl(0.02,0,0.3);% way point above tea cup before placing tea bag
             self.teaBags{self.orderCount}.goalLocation = waypoint;
             MoveObject(self,self.teaBags{self.orderCount},q,100,0);
-            
-            
+                        
             self.teaBags{self.orderCount}.goalLocation = self.cups{self.orderCount}.currentLocation*transl(0.02,0,0.1);
             MoveObject(self, self.teaBags{self.orderCount}, q, 100, 0);     % place in cup
         
@@ -356,20 +355,18 @@ classdef Assignment2Starter < handle
                         pause(1);
                     end
                     self.sugarcubes{i} = MoveableObject('sugarcube.ply'); 
-
-                    self.sugarcubes{i}.Move(transl(-0.45,-2.2,1.05));
-                    
+                    self.sugarcubes{i}.Move(transl(-0.45,-2.2,1.05));                    
                     self.sugarcubes{i}.goalLocation = self.cups{self.orderCount}.currentLocation*transl(0.02,0.04,0.1);
 
                     waypoint = transl(-0.7,-3.1,1.35); %waypoint before going above sugar canister, stops dobot from hitting tea boxes %TODO FIX! HITTING TEA BOXES STILL
-                    self.sugarcubes{self.orderCount}.goalLocation = waypoint;
+                    self.sugarcubes{i}.goalLocation = waypoint;
                     GetObject(self, self.sugarcubes{i}.goalLocation, qInitial, 50);
                     waypoint = transl(-0.7,-2.75,1.35); %another waypoint before going above sugar canister, stops dobot from hitting tea boxes %TODO FIX! HITTING TEA BOXES STILL
-                    self.sugarcubes{self.orderCount}.goalLocation = waypoint;
+                    self.sugarcubes{i}.goalLocation = waypoint;
                     GetObject(self, self.sugarcubes{i}.goalLocation, qInitial, 50);
 
                     waypoint = transl(self.sugarcubes{i}.currentLocation(1),self.sugarcubes{i}.currentLocation(2),self.sugarcubes{i}.currentLocation(3)+0.5); % waypoint above sugar canister
-                    self.sugarcubes{self.orderCount}.goalLocation = waypoint;
+                    self.sugarcubes{i}.goalLocation = waypoint;
                     GetObject(self, self.sugarcubes{i}.goalLocation, qInitial, 50); 
 
                     GetObject(self, self.sugarcubes{i}.currentLocation*transl(0,0,0.1), qInitial, 50); % Go to the sugar canister
@@ -381,7 +378,7 @@ classdef Assignment2Starter < handle
                     self.sugarcubes{i}.goalLocation = waypoint;
                     MoveObject(self,self.sugarcubes{i},qInitial,100,0);
 
-                    self.sugarcubes{i}.goalLocation = self.cups{self.orderCount}.currentLocation;
+                    self.sugarcubes{i}.goalLocation = self.cups{self.orderCount}.currentLocation*transl(0.02,0.04,0.1);
                     MoveObject(self, self.sugarcubes{i}, qInitial, 100, 0); %place in cup
                     try delete(self.sugarcubes{i}.mesh); end
                 end
