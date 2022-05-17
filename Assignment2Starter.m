@@ -415,8 +415,23 @@ classdef Assignment2Starter < handle
         
             if milkType > 0
                 GetObject(self, self.cups{self.orderCount}.currentLocation*transl(0,0,0.1), qInitial, 50); % Get the cup
+
+                %waypoints below to ensure the cup does not go through the milk dispensers
+                waypoint = transl(-0.7894,-2.5290,1.2784);
+                self.cups{self.orderCount}.goalLocation = waypoint;
+                MoveObject(self, self.cups{self.orderCount}, qInitial, 100, 0);
+
+                waypoint = transl(-0.6894,-2.52901,1.2784);
+                self.cups{self.orderCount}.goalLocation = waypoint;
+                MoveObject(self, self.cups{self.orderCount}, qInitial, 100, 0);
+
+                waypoint = transl(-0.5894,-2.52901,1.2784);
+                self.cups{self.orderCount}.goalLocation = waypoint;
+                MoveObject(self, self.cups{self.orderCount}, qInitial, 100, 0);
+
                 self.cups{self.orderCount}.goalLocation = transl(selectedMilkLocation)*transl(0.03,0,0.1);
-                MoveObject(self, self.cups{self.orderCount}, qInitial, 100, 0); % Pick up cup and move to under milk dispenser
+                MoveObject(self, self.cups{self.orderCount}, qInitial, 100, 0); %go to milk
+
                 DispenseLiquid(self, selectedMilkLocation, qInitial, 'w', 'milk');
             end 
         end
