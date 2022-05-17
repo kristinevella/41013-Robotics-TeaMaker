@@ -901,6 +901,7 @@ function VisualServoingForSign(self,q0,object) %adapted from Lab 8 visual servoi
             %depth of the IBVS
             depth = mean (signpoints(1,:));
 
+            f2 = figure(2);
             self.calcDobot.model.plot(q0,'workspace',self.calcDobot.workspace,'nojoints','scale',0.1,'noarrow');
             Tc0 = self.calcDobot.model.fkine(q0);
 
@@ -1020,17 +1021,19 @@ function VisualServoingForSign(self,q0,object) %adapted from Lab 8 visual servoi
              end
              
             %% 1.5 Plot results
-%             figure()            
-%             plot_p(history,signStar,cam)
-%             figure()
-%             plot_camera(history)
-%             figure()
-%             plot_vel(history)
-%             figure()
-%             plot_robjointpos(history)
-%             figure()
-%             plot_robjointvel(history)
-            
+            if self.debug
+                figure()            
+                plot_p(history,signStar,cam)
+                figure()
+                plot_camera(history)
+                figure()
+                plot_vel(history)
+                figure()
+                plot_robjointpos(history)
+                figure()
+                plot_robjointvel(history)
+            end
+            close(f2);
 end
 
 %% plot_ - Functions for plotting visual servoing(From Lab 8 Solution)
