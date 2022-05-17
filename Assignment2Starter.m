@@ -606,6 +606,8 @@ classdef Assignment2Starter < handle
         %% CalcDobotTo6Dof - Used to simplfy the calculations on the Dobot due to the hardware limitations of the actual Dobot
         function plotQ = CalcDobotTo6Dof(self, CalcDobotQ, endEffector)
             self.L.mlog = {self.L.DEBUG,mfilename('class'),'CalcDobotTo6Dof: Called'};
+            self.L.mlog = {self.L.DEBUG,mfilename('class'),['CalcDobotTo6Dof: CalcDobotQ = ', self.L.MatrixToString(CalcDobotQ)]};
+
 %             % Find the location of the calcDobot
 %             trBefore = self.calcDobot.model.fkine(CalcDobotQ);
 %             % Modify the end effector location, and add end effector
@@ -641,12 +643,12 @@ classdef Assignment2Starter < handle
             plotQ(5) = pi/2 - CalcDobotQ(4) - CalcDobotQ(3);
             plotQ(6) = endEffector;
             
-            self.L.mlog = {self.L.DEBUG,mfilename('class'),['CalcDobotTo6Dof: trBefore = ',self.L.MatrixToString(trBefore)]};
-            self.L.mlog = {self.L.DEBUG,mfilename('class'),['CalcDobotTo6Dof: trAfter = ',self.L.MatrixToString(trAfter)]};
+%             self.L.mlog = {self.L.DEBUG,mfilename('class'),['CalcDobotTo6Dof: trBefore = ',self.L.MatrixToString(trBefore)]};
+%             self.L.mlog = {self.L.DEBUG,mfilename('class'),['CalcDobotTo6Dof: trAfter = ',self.L.MatrixToString(trAfter)]};
             self.L.mlog = {self.L.DEBUG,mfilename('class'),['CalcDobotTo6Dof: CalcDobotQ = ', self.L.MatrixToString(CalcDobotQ)]};
-            self.L.mlog = {self.L.DEBUG,mfilename('class'),['CalcDobotTo6Dof: newQ = ', self.L.MatrixToString(newQ)]};
-            self.L.mlog = {self.L.DEBUG,mfilename('class'),['CalcDobotTo6Dof: plotQ = ', self.L.MatrixToString(plotQ)]};
-        end
+%             self.L.mlog = {self.L.DEBUG,mfilename('class'),['CalcDobotTo6Dof: newQ = ', self.L.MatrixToString(newQ)]};
+%             self.L.mlog = {self.L.DEBUG,mfilename('class'),['CalcDobotTo6Dof: plotQ = ', self.L.MatrixToString(plotQ)]};
+%         end
 
         %% Collision Detection - derrived from Lab6Solution
         function result = IsCollision(self,robot, radii, centerPoint, qMatrix, points, L, h)
