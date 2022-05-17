@@ -303,12 +303,12 @@ classdef Assignment2Starter < handle
                     selectedTeaLocation = transl(self.GREEN_TEA_LOCATION);
                    self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'Green tea selected!']};
                     disp('Green tea selected!');
-                    waypoint = transl(self.GREEN_TEA_LOCATION(1),self.GREEN_TEA_LOCATION(2),self.GREEN_TEA_LOCATION(3)+0.3); %waypoint above tea box
+                    waypoint = transl(-0.6890,-1.7711,1.2844); %waypoint above tea box
                 case 3
                     selectedTeaLocation = transl(self.LEMON_GINGER_TEA_LOCATION);
                     self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'Lemon and Ginger tea selected!']};
                     disp('Lemon and Ginger tea selected!');
-                    waypoint = transl(self.LEMON_GINGER_TEA_LOCATION(1)-0.1,self.LEMON_GINGER_TEA_LOCATION(2),self.LEMON_GINGER_TEA_LOCATION(3)+0.35); %waypoint above tea box
+                    waypoint = transl(-0.5453,-1.8077,1.3036); %waypoint above tea box
                 otherwise
                     self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'Invalid tea request - Order cancelled']};
                     disp('Invalid tea request. Order has been cancelled, please try again');
@@ -365,7 +365,8 @@ classdef Assignment2Starter < handle
                     self.sugarcubes{i}.goalLocation = waypoint;
                     GetObject(self, self.sugarcubes{i}.goalLocation, qInitial, 50);
 
-                    waypoint = transl(self.sugarcubes{i}.currentLocation(1),self.sugarcubes{i}.currentLocation(2),self.sugarcubes{i}.currentLocation(3)+0.5); % waypoint above sugar canister
+%                     waypoint = transl(self.sugarcubes{i}.currentLocation(1),self.sugarcubes{i}.currentLocation(2),self.sugarcubes{i}.currentLocation(3)+0.5); % waypoint above sugar canister
+                    waypoint = transl(-0.5470,-2.2603,1.3221); % waypoint above sugar canister
                     self.sugarcubes{i}.goalLocation = waypoint;
                     GetObject(self, self.sugarcubes{i}.goalLocation, qInitial, 50); 
 
