@@ -519,9 +519,9 @@ classdef Assignment2Starter < handle
                 self.cups{i} = MoveableObject('cup.ply');
             end
 
-            self.cups{1}.Move(transl(-1,-3.6,1.12));
-            self.cups{2}.Move(transl(-0.8,-3.6,1.12));
-            self.cups{3}.Move(transl(-0.6,-3.6,1.12));
+            self.cups{1}.Move(transl(-0.55,-3.1,1.12));
+            self.cups{2}.Move(transl(-0.55,-3.27,1.12));
+            self.cups{3}.Move(transl(-0.55,-3.44,1.12));
 
             LowerBarriers(self);                                            % Reset barriers
             ResetPosition(self);                                            % Reset Dobot
