@@ -204,6 +204,9 @@ classdef Assignment2Starter < handle
             self.cups{2}.Move(transl(-0.8,-3.6,1.12));
             self.cups{3}.Move(transl(-0.6,-3.6,1.12));
 
+            self.spoon = MoveableObject('spoon.ply');
+            self.spoon.Move(transl(-0.45 ,-2.2,1.3));
+
             % Fill sugar container - These are for display only
             PlaceObject('sugarcube.ply',[-0.45,-2.2,1.05]);
             PlaceObject('sugarcube.ply',[-0.47,-2.21,1.05]);
