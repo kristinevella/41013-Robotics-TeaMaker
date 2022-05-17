@@ -627,12 +627,12 @@ classdef Assignment2Starter < handle
 %             newQ = self.calcDobot.model.ikine(trAfter,CalcDobotQ,[1,1,1,0,0,0]);
 %             %newQ = self.calcDobot.model.ikcon(trAfter,CalcDobotQ);
 
-            plotQ = zeros(1,6);
-            plotQ(1) = newQ(1);
-            plotQ(2) = newQ(2); 
-            plotQ(3) = newQ(3);
-            plotQ(4) = newQ(4);
-            plotQ(5) = pi/2 - newQ(4) - newQ(3);
+%             plotQ = zeros(1,6);
+%             plotQ(1) = newQ(1);
+%             plotQ(2) = newQ(2); 
+%             plotQ(3) = newQ(3);
+%             plotQ(4) = newQ(4);
+%             plotQ(5) = pi/2 - newQ(4) - newQ(3);
 
             plotQ(1) = CalcDobotQ(1); 
             plotQ(2) = CalcDobotQ(2);
