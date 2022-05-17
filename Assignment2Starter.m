@@ -300,14 +300,18 @@ classdef Assignment2Starter < handle
                     selectedTeaLocation = transl(self.ENGLISH_BREAKFAST_LOCATION);
                     self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'English Breakfast tea selected!']};
                     disp('English Breakfast tea selected!');
+                    waypoint = transl(self.ENGLISH_BREAKFAST_LOCATION(1)+0.1,self.ENGLISH_BREAKFAST_LOCATION(2),self.ENGLISH_BREAKFAST_LOCATION(3)+0.35); %waypoint above tea box
+
                 case 2
                     selectedTeaLocation = transl(self.GREEN_TEA_LOCATION);
                    self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'Green tea selected!']};
                     disp('Green tea selected!');
+                    waypoint = transl(self.GREEN_TEA_LOCATION(1),self.GREEN_TEA_LOCATION(2),self.GREEN_TEA_LOCATION(3)+0.3); %waypoint above tea box
                 case 3
                     selectedTeaLocation = transl(self.LEMON_GINGER_TEA_LOCATION);
                     self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'Lemon and Ginger tea selected!']};
                     disp('Lemon and Ginger tea selected!');
+                    waypoint = transl(self.LEMON_GINGER_TEA_LOCATION(1)-0.1,self.LEMON_GINGER_TEA_LOCATION(2),self.LEMON_GINGER_TEA_LOCATION(3)+0.35); %waypoint above tea box
                 otherwise
                     self.L.mlog = {self.L.DEBUG,mfilename('class'),[self.L.Me,'Invalid tea request - Order cancelled']};
                     disp('Invalid tea request. Order has been cancelled, please try again');
@@ -326,8 +330,11 @@ classdef Assignment2Starter < handle
             self.teaBags{self.orderCount} = MoveableObject('teabag.ply');   % Instantiate new tea bag
             self.teaBags{self.orderCount}.Move(selectedTeaLocation);
         
+            q = self.qz; % ** Change q to suit
+            self.teaBags{self.orderCount}.goalLocation = waypoint;
+            MoveObject(self,self.teaBags{self.orderCount},q,100,0);% way point before bringing tea bag to cup
+
             self.teaBags{self.orderCount}.goalLocation = self.cups{self.orderCount}.currentLocation*transl(0.02,0,0.1);
-            q = self.qz;
             MoveObject(self, self.teaBags{self.orderCount}, q, 100, 0);     % Pick up teabag and place in cup
         
             UpdateCup(self, 'teaBag');
@@ -347,9 +354,22 @@ classdef Assignment2Starter < handle
                         pause(1);
                     end
                     self.sugarcubes{i} = MoveableObject('sugarcube.ply'); 
+
                     self.sugarcubes{i}.Move(transl(-0.45,-2.2,1.05));
-                    GetObject(self, self.sugarcubes{i}.currentLocation*transl(0,0,0.1), qInitial, 50); % Go to the sugar canister
+                    
                     self.sugarcubes{i}.goalLocation = self.cups{self.orderCount}.currentLocation*transl(0.02,0.04,0.1);
+
+                    waypoint = transl(self.sugarcubes{i}.currentLocation(1),self.sugarcubes{i}.currentLocation(2),self.sugarcubes{i}.currentLocation(3)+0.5);
+                    self.sugarcubes{self.orderCount}.goalLocation = waypoint;
+                    GetObject(self, self.sugarcubes{i}.goalLocation, qInitial, 50); % go to waypoint before the sugar canister
+
+                    GetObject(self, self.sugarcubes{i}.currentLocation*transl(0,0,0.1), qInitial, 50); % Go to the sugar canister
+
+                    self.sugarcubes{i}.goalLocation = waypoint; %waypoint before bringing sugar to cup
+                    MoveObject(self, self.sugarcubes{i}, qInitial, 100, 0);
+
+                    self.sugarcubes{i}.goalLocation = self.cups{self.orderCount}.currentLocation;
+
                     MoveObject(self, self.sugarcubes{i}, qInitial, 100, 0); % Pick up sugercube and place in cup
                     try delete(self.sugarcubes{i}.mesh); end
                 end
