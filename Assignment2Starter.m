@@ -452,7 +452,7 @@ classdef Assignment2Starter < handle
 
             self.cups{self.orderCount}.goalLocation = self.coasters{self.orderCount}.currentLocation*transl(-0.18,0.04,0.22);
             self.cups{self.orderCount}.rotation = -pi;
-            MoveObject(self, self.cups{self.orderCount}, [-0.0883,-2.1192,0.0873,0.8586], 50, pi);       % Pick up cup and move to coaster
+            MoveObject(self, self.cups{self.orderCount}, [-1,deg2rad(135),deg2rad(45),deg2rad(45)], 50, pi);       % Pick up cup and move to coaster
         end
         
         %% StirTea
