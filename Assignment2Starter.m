@@ -522,9 +522,14 @@ classdef Assignment2Starter < handle
         function DemoVisualServoing(self)
             self.L.mlog = {self.L.DEBUG,mfilename('class'),'DemoVisualServoing: Called'};
             RaiseBarriers(self)
+            self.lightCurtain_h = InitialiseLightCurtain(self);
             q0 = MoveToTeaArea(self,self.qz,100);
             SimulateWarningSign(self);
             VisualServoingForSign(self,q0,self.warningsign);
+            delete(self.warningsign.mesh);
+            LowerBarriers(self);
+            delete(self.lightCurtain_h);
+            self.lightCurtainPoints = [];
         end
 
         %% Reset Simulation
@@ -699,7 +704,7 @@ classdef Assignment2Starter < handle
 %             self.L.mlog = {self.L.DEBUG,mfilename('class'),['CalcDobotTo6Dof: plotQ = ', self.L.MatrixToString(plotQ)]};
          end
 
-        %% Collision Detection - derrived from Lab6Solution
+        %% IsCollision - Collision Detection (derrived from Lab6Solution)
         function result = IsCollision(self,robot, radii, centerPoint, qMatrix, points, L, h)
             L.mlog = {L.DEBUG,mfilename('class'),['IsCollision: ','Called']};
         
@@ -731,7 +736,7 @@ classdef Assignment2Starter < handle
             end
         end
             
-        %% Collision Avoidance - derrived from Lab6Solution (From current position to goal position)
+        %% Collision Avoidance - derrived from Lab5_Solution_Question2and3 (From current position to goal position)
         function AvoidCollisions(self, robot, radii, centerPoint, qGoal, points, L, h)
             L.mlog = {L.DEBUG,mfilename('class'),['AvoidCollisions: ','Called']};
             while h %Check for emergency stop
